@@ -1,0 +1,27 @@
+{
+    "name": "@wepay/sdk",
+    "version": "0.1.0",
+    "description": "The Consumer Abstraction Layer for Autonomous AI Agent Payments",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "files": [
+        "dist"
+    ],
+    "scripts": {
+        "build": "tsc",
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [
+        "ai",
+        "agents",
+        "payments",
+        "web3",
+        "usdc",
+        "abstraction"
+    ],
+    "author": "pegasus4me",
+    "license": "MIT",
+    "dependencies": {
+        "zod": "^3.22.4"
+    }
+}
