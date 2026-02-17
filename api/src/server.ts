@@ -3,6 +3,8 @@ import cors from 'cors';
 import { config } from './config.js';
 import paymentRoutes from './routes/payments.js';
 import walletRoutes from './routes/wallets.js';
+import marketRoutes from './routes/market.js';
+import invoiceRoutes from './routes/invoices.js';
 
 const app = express();
 
@@ -25,10 +27,12 @@ app.get('/health', (req, res) => {
 
 app.use('/v1/payments', paymentRoutes);
 app.use('/v1/wallets', walletRoutes);
+app.use('/v1/market', marketRoutes);
+app.use('/v1/invoices', invoiceRoutes);
 
 app.listen(config.port, () => {
     console.log(`
-🚀 WePay API — The Consumer Abstraction Layer
+🚀 Weppo API — The Consumer Abstraction Layer
 Server running on http://localhost:${config.port}
   `);
 });

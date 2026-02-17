@@ -13,11 +13,56 @@ const paymasterService = new PaymasterService();
 const WALLET_ADDRESS = config.privateKey ? privateKeyToAccount(config.privateKey).address : '0x0';
 
 router.post('/', async (req, res) => {
-    const { to, amount, currency, memo, productId } = req.body;
+    const { to, amount, currency, memo, productId, invoiceId } = req.body;
     const agentId = req.headers['x-agent-id'] as string;
 
     if (!agentId) return res.status(401).json({ message: 'Missing agent ID' });
-    if (!to || !amount) return res.status(400).json({ message: 'Missing payment details' });
+
+    // --- Resolve Invoice if present ---
+    let recipientAddress = to;
+    let finalAmount = amount;
+    let finalCurrency = currency || 'USDC';
+    let finalDescription = memo;
+
+    if (invoiceId) {
+        const invoice = db.prepare('SELECT * FROM invoices WHERE id = ?').get(invoiceId) as any;
+        if (!invoice) return res.status(404).json({ message: 'Invoice not found' });
+        if (invoice.status === 'paid') return res.status(400).json({ message: 'Invoice already paid' });
+
+        // Payer check (if invoice is restricted)
+        if (invoice.payer_id && invoice.payer_id !== agentId) {
+            return res.status(403).json({ message: 'You are not the designated payer for this invoice' });
+        }
+
+        finalAmount = invoice.amount;
+        finalCurrency = invoice.currency;
+        finalDescription = `Payment for Invoice ${invoiceId}: ${invoice.description || ''}`;
+
+        // Resolve Recipient (Invoice Creator)
+        const creator = db.prepare('SELECT wallet_address FROM agents WHERE id = ?').get(invoice.agent_id) as any;
+        if (!creator) return res.status(500).json({ message: 'Invoice creator agent not found' });
+        recipientAddress = creator.wallet_address;
+    }
+
+    if (!recipientAddress || !finalAmount) return res.status(400).json({ message: 'Missing payment details (to/amount or invoiceId)' });
+
+
+    // --- Resolve Agent ID to Wallet Address if needed (if not already resolved from invoice) ---
+    if (recipientAddress && !recipientAddress.startsWith('0x')) {
+        const agent = db.prepare('SELECT wallet_address FROM agents WHERE id = ?').get(recipientAddress) as any;
+        if (agent) {
+            recipientAddress = agent.wallet_address;
+        } else {
+            return res.status(400).json({ message: `Recipient agent '${recipientAddress}' not found.` });
+        }
+    }
+
+    // Resolve Service Provider if productId is present and to is not provided (optional enhancement)
+    // For now we stick to 'to' field resolution.
+
+    if (!recipientAddress || !recipientAddress.startsWith('0x')) {
+        return res.status(400).json({ message: 'Invalid recipient address or agent ID.' });
+    }
 
     try {
         const id = `pay_${crypto.randomUUID()}`;
@@ -27,13 +72,19 @@ router.post('/', async (req, res) => {
         db.prepare('INSERT OR IGNORE INTO agents (id, wallet_address) VALUES (?, ?)').run(agentId, WALLET_ADDRESS);
 
         // Execute on-chain payment and wait for receipt
-        const { hash, gasUsed, effectiveGasPrice } = await paymentService.executePayment(to, amount);
+        const { hash, gasUsed, effectiveGasPrice } = await paymentService.executePayment(recipientAddress, finalAmount);
 
         // Record in DB
         db.prepare(`
       INSERT INTO payments (id, agent_id, amount, currency, recipient, status, hash, memo, product_id)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(id, agentId, amount, currency || 'USDC', to, 'confirmed', hash, memo || '', productId || null);
+    `).run(id, agentId, finalAmount, finalCurrency, recipientAddress, 'confirmed', hash, finalDescription || '', productId || null);
+
+        // Mark Invoice as Paid if applicable
+        if (invoiceId) {
+            db.prepare('UPDATE invoices SET status = ?, payment_hash = ? WHERE id = ?')
+                .run('paid', hash, invoiceId);
+        }
 
         // Track sponsorship via Paymaster
         await paymasterService.trackSponsorship(id, gasUsed, effectiveGasPrice);
@@ -43,11 +94,12 @@ router.post('/', async (req, res) => {
         res.json({
             id,
             status: 'confirmed',
-            amount,
-            currency: currency || 'USDC',
-            to,
+            amount: finalAmount,
+            currency: finalCurrency,
+            to: recipientAddress,
             hash,
             productId,
+            invoiceId,
             explorerUrl: paymentService.getExplorerUrl(hash),
             sponsorship: {
                 gasUsed: gasUsed.toString(),

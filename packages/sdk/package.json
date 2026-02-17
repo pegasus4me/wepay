@@ -1,5 +1,5 @@
 {
-    "name": "@wepay/sdk",
+    "name": "@weppo/sdk",
     "version": "0.1.0",
     "description": "The Consumer Abstraction Layer for Autonomous AI Agent Payments",
     "main": "./dist/index.js",

@@ -1,18 +1,18 @@
-import { WePay } from '../packages/sdk/src/index.js';
+import { Weppo } from '../packages/sdk/src/index.js';
 import dotenv from 'dotenv';
 dotenv.config();
 
 /**
- * WePay x402 Demo: The Merchant Gateway in Action
+ * Weppo x402 Demo: The Merchant Gateway in Action
  * 
  * This script simulates an agent programmatically "discovering" a product 
  * and paying for it using the x402 Merchant Gateway pattern.
  */
 async function runX402Demo() {
-    console.log('--- WePay x402 Merchant Gateway Demo ---');
+    console.log('--- Weppo x402 Merchant Gateway Demo ---');
 
-    const wepay = new WePay({
-        apiKey: process.env.API_SECRET || 'sk_test_wepay_123',
+    const weppo = new Weppo({
+        apiKey: process.env.API_SECRET || 'sk_test_weppo_123',
         agentId: 'openclaw_scout_01',
         baseUrl: `http://localhost:${process.env.PORT || 3111}/v1`,
     });
@@ -29,7 +29,7 @@ async function runX402Demo() {
 
         console.log(`[Agent] Initiating x402 purchase for ${paymentAmount} USDC...`);
 
-        const receipt = await wepay.pay({
+        const receipt = await weppo.pay({
             to: gatewayAddress,
             amount: paymentAmount,
             productId: productId,
@@ -44,8 +44,8 @@ async function runX402Demo() {
         console.log(`Explorer:    ${receipt.explorerUrl}`);
 
         if ((receipt as any).sponsorship) {
-            console.log(`\n[WePay Abstraction] 🛡️ Gas was fully sponsored by the Paymaster Engine.`);
-            console.log(`[WePay Abstraction] Cumulative sponsorship: ${(receipt as any).sponsorship.cumulativeAgentSponsorship} ETH`);
+            console.log(`\n[Weppo Abstraction] 🛡️ Gas was fully sponsored by the Paymaster Engine.`);
+            console.log(`[Weppo Abstraction] Cumulative sponsorship: ${(receipt as any).sponsorship.cumulativeAgentSponsorship} ETH`);
         }
 
     } catch (error: any) {

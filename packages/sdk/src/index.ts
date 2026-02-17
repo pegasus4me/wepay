@@ -1,29 +1,29 @@
-import { WePayConfig, PaymentRequest, PaymentResponse, BalanceResponse } from './types.js';
-import { WePayClient } from './client.js';
+import { WeppoConfig, PaymentRequest, PaymentResponse, BalanceResponse, Service, CreateServiceRequest, Invoice, CreateInvoiceRequest } from './types.js';
+import { WeppoClient } from './client.js';
 
 export * from './types.js';
 export * from './errors.js';
 
 /**
- * WePay: The Consumer Abstraction Layer for Autonomous AI Agent Payments
+ * Weppo: The Consumer Abstraction Layer for Autonomous AI Agent Payments
  */
-export class WePay {
-    private client: WePayClient;
+export class Weppo {
+    private client: WeppoClient;
 
-    constructor(config: WePayConfig) {
-        if (!config.apiKey) throw new Error('WePay API Key is required');
+    constructor(config: WeppoConfig) {
+        if (!config.apiKey) throw new Error('Weppo API Key is required');
         if (!config.agentId) throw new Error('Agent ID is required');
 
-        this.client = new WePayClient(config);
+        this.client = new WeppoClient(config);
     }
 
     /**
      * Execute a payment. The agent does not need to handle wallets or keys.
      */
     async pay(params: PaymentRequest): Promise<PaymentResponse> {
-        console.log(`[WePay] Initiating payment of ${params.amount} ${params.currency} to ${params.to}`);
+        console.log(`[Weppo] Initiating payment of ${params.amount} ${params.currency} to ${params.to}`);
         const response = await this.client.createPayment(params);
-        console.log(`[WePay] Payment settled. ID: ${response.id}, Status: ${response.status}`);
+        console.log(`[Weppo] Payment settled. ID: ${response.id}, Status: ${response.status}`);
         return response;
     }
 
@@ -40,4 +40,42 @@ export class WePay {
     async getPaymentDetails(paymentId: string): Promise<PaymentResponse> {
         return this.client.getPayment(paymentId);
     }
+
+    /**
+     * Agent Market: Discovery & Commerce
+     */
+    public market = {
+        /**
+         * List a service in the Weppo Registry.
+         */
+        list: async (params: CreateServiceRequest): Promise<Service> => {
+            return this.client.createService(params);
+        },
+
+        /**
+         * Find available services.
+         */
+        find: async (): Promise<Service[]> => {
+            return this.client.listServices();
+        }
+    };
+
+    /**
+     * Invoices: Payment Links
+     */
+    public invoice = {
+        /**
+         * Create a new Payment Link / Invoice.
+         */
+        create: async (params: CreateInvoiceRequest): Promise<Invoice> => {
+            return this.client.createInvoice(params);
+        },
+
+        /**
+         * Get an invoice by ID.
+         */
+        get: async (id: string): Promise<Invoice> => {
+            return this.client.getInvoice(id);
+        }
+    };
 }

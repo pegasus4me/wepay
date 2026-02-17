@@ -1,6 +1,6 @@
 import Database from 'better-sqlite3';
 
-const db: Database.Database = new Database('wepay.db');
+const db: Database.Database = new Database('weppo.db');
 db.pragma('journal_mode = WAL');
 
 // Initialize schema
@@ -23,6 +23,32 @@ db.exec(`
     gas_used TEXT,
     gas_price TEXT,
     product_id TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(agent_id) REFERENCES agents(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS agent_services (
+    id TEXT PRIMARY KEY,
+    provider_agent_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT,
+    price REAL NOT NULL,
+    currency TEXT NOT NULL,
+    endpoint_url TEXT NOT NULL,
+    collateral_amount REAL DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(provider_agent_id) REFERENCES agents(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS invoices (
+    id TEXT PRIMARY KEY,
+    agent_id TEXT NOT NULL,
+    amount REAL NOT NULL,
+    currency TEXT NOT NULL,
+    description TEXT,
+    status TEXT DEFAULT 'pending', -- pending, paid, cancelled
+    payer_id TEXT,
+    payment_hash TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(agent_id) REFERENCES agents(id)
   );

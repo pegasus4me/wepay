@@ -3,7 +3,7 @@ dotenv.config();
 
 export const config = {
     port: process.env.PORT || 3111,
-    apiSecret: process.env.API_SECRET || 'wepay_test_secret',
+    apiSecret: process.env.API_SECRET || 'weppo_test_secret',
     privateKey: process.env.PRIVATE_KEY as `0x${string}`,
     rpcUrl: process.env.BASE_SEPOLIA_RPC_URL || 'https://sepolia.base.org',
     usdcAddress: (process.env.USDC_CONTRACT_ADDRESS || '0x036CbD53842c5426634e7929541eC2318f3dCF7e') as `0x${string}`,

@@ -10,7 +10,7 @@ interface IERC5192 {
 }
 
 /**
- * @title WePay Agent Passport
+ * @title Weppo Agent Passport
  * @notice A Soulbound Token (SBT) acting as the identity and reputation layer for agents.
  * @dev Implements ERC-721 but disables transfers (Soulbound).
  */
@@ -26,10 +26,10 @@ contract AgentPassport is ERC721, Ownable {
     event PassportMinted(address indexed agent, uint256 tokenId);
     event ReputationUpdated(uint256 indexed tokenId, uint256 newScore);
 
-    constructor() ERC721("WePay Agent Passport", "PASS") Ownable(msg.sender) {}
+    constructor() ERC721("Weppo Agent Passport", "PASS") Ownable(msg.sender) {}
 
     /**
-     * @notice Mints a new Passport for an agent. Only owner (WePay Oracle) can mint.
+     * @notice Mints a new Passport for an agent. Only owner (Weppo Oracle) can mint.
      * @param agent The wallet address of the agent.
      */
     function mint(address agent) external onlyOwner {

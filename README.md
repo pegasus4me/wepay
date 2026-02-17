@@ -1,12 +1,12 @@
-# WePay — Financial Rails for the AI Economy
+# Weppo — Financial Rails for the AI Economy
 
-> **The Universal Protocol for Agent-to-Agent and Agent-to-Business Transactions.**
+> **The Protocol for Agent-to-Agent Transactions.**
 > Built on x402 · Soulbound Identity · Deterministic Security
 
 ---
 
 ## 1. The Vision
-WePay isn't a store — it's the **Visa/Stripe metadata layer for Autonomous Agents**.
+Weppo isn't a store — it's the **Visa/Stripe metadata layer for Autonomous Agents**.
 We make it simple for **solo-builders, startups, and enterprises** to transact with and monetize AI agents, tools, and services.
 
 **The Problem:**
@@ -19,7 +19,7 @@ A unified financial rail that adds **Identity (Who)** and **Security (Rules)** t
 
 ---
 
-## 2. The 3 Pillars of WePay
+## 2. The 3 Pillars of Weppo
 
 ### A. 🆔 Identity: The Agent Passport (Live)
 Every agent mints a **Soulbound Token (SBT)** on Base.
@@ -47,7 +47,7 @@ A protocol-agnostic settlement layer.
 graph LR
     Agent["🤖 Agent"] --"1. Intent (JSON)"--> Policy["🛡️ Policy Engine"]
     
-    subgraph "WePay Infrastructure"
+    subgraph "Weppo Infrastructure"
         Policy --"2. Check Identity"--> Passport["🆔 On-Chain SBT"]
         Policy --"3. Approved"--> Settlement["4. Settlement Rail"]
     end
@@ -60,21 +60,53 @@ graph LR
 
 - [x] **Agent Passport**: On-chain identity contract (ERC-5192).
 - [ ] **Policy Engine**: JSON Intent validation & budget enforcement.
-- [ ] **Universal SDK**: A single library to `WePay.pay()` for any resource.
+- [ ] **Universal SDK**: A single library to `Weppo.pay()` for any resource.
 
-## 5. Quickstart
+## 🚀 How It Works (The "Stripe for Agents")
+
+Weppo provides two main ways for agents to transact:
+
+### 1. The Service Market (Discovery)
+Agents can list services and others can find and pay for them.
 
 ```typescript
-import { WePay } from '@wepay/sdk';
-
-// 1. Initialize with your Agent's Secret
-const wepay = new WePay({ apiKey: 'sk_agent_123' });
-
-// 2. Pay for anything (API, Service, Compute)
-await wepay.pay({
-  intent: 'purchase_compute',
-  amount: 0.05, 
-  currency: 'USDC',
-  recipient: '0x123...'
+// Provider: Listing a Service
+const service = await weppo.market.list({
+  name: 'Translation (EN->ES)',
+  price: 5, // USDC
+  endpointUrl: 'https://agent-a.com/api/run'
 });
+
+// Consumer: Finding and Paying
+const services = await weppo.market.find();
+const translationCheck = services.find(s => s.name === 'Translation (EN->ES)');
+
+// Pay the provider (Weppo resolves the wallet address automatically)
+const receipt = await weppo.pay({
+  to: translationCheck.providerAgentId, // e.g., 'agent_translator_x'
+  amount: translationCheck.price,
+  productId: translationCheck.id
+});
+```
+
+### 2. Payment Links / Invoices (Direct Commerce)
+An agent can generate a payment link (invoice) for another agent to pay. This is useful for custom tasks or gated access.
+
+```typescript
+// Provider: Create an Invoice
+const invoice = await weppo.invoice.create({
+  amount: 10,
+  currency: 'USDC',
+  description: 'Custom Research Report'
+});
+console.log(invoice.payLink); // e.g., weppo://pay/inv_123
+
+// Consumer: Pay the Invoice
+const receipt = await weppo.pay({
+  invoiceId: 'inv_123' 
+  // Amount and recipient are auto-filled!
+});
+```
+
+## 🛠️ Installation
 ```

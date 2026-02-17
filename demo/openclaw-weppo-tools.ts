@@ -1,17 +1,17 @@
-import { WePay } from '../packages/sdk/src/index.js';
+import { Weppo } from '../packages/sdk/src/index.js';
 import dotenv from 'dotenv';
 dotenv.config();
 
 /**
- * OpenClaw Tool: WePay Integration
+ * OpenClaw Tool: Weppo Integration
  * 
- * This is an example of how you wrap the WePay SDK as a "Tool" 
+ * This is an example of how you wrap the Weppo SDK as a "Tool" 
  * that an OpenClaw agent can call autonomously.
  */
 
-// 1. Initialize WePay
-const wepay = new WePay({
-    apiKey: process.env.API_SECRET || 'sk_test_wepay_123',
+// 1. Initialize Weppo
+const weppo = new Weppo({
+    apiKey: process.env.API_SECRET || 'sk_test_weppo_123',
     agentId: 'openclaw_scout_01',
     baseUrl: `http://localhost:${process.env.PORT || 3111}/v1`,
 });
@@ -25,16 +25,16 @@ const wepay = new WePay({
  *  - memo: Why you are paying (e.g. "Payment for search results")
  *  - productId: (Optional) The x402 Product ID if purchasing from a Gateway
  */
-export async function wepay_pay_tool(args: {
+export async function weppo_pay_tool(args: {
     recipient: string,
     amount: number,
     memo?: string,
     productId?: string
 }) {
     try {
-        console.log(`[OpenClaw Tool] Executing WePay for ${args.amount} USDC...`);
+        console.log(`[OpenClaw Tool] Executing Weppo for ${args.amount} USDC...`);
 
-        const receipt = await wepay.pay({
+        const receipt = await weppo.pay({
             to: args.recipient,
             amount: args.amount,
             memo: args.memo,
@@ -62,9 +62,9 @@ export async function wepay_pay_tool(args: {
  * The "Balance" Tool for OpenClaw
  * Description: Use this tool to check how much money you have left before planning a task.
  */
-export async function wepay_balance_tool() {
+export async function weppo_balance_tool() {
     try {
-        const balance = await wepay.getBalance();
+        const balance = await weppo.getBalance();
         return {
             amount: balance.amount,
             currency: balance.currency,
@@ -75,4 +75,4 @@ export async function wepay_balance_tool() {
     }
 }
 
-console.log('OpenClaw WePay Tools initialized.');
+console.log('OpenClaw Weppo Tools initialized.');
