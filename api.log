@@ -1,0 +1,145 @@
+
+> weppo@1.0.0 dev:api
+> npm run dev --workspace=api
+
+
+> api@0.1.0 dev
+> tsx watch src/server.ts
+
+
+🚀 Weppo API — The Consumer Abstraction Layer
+Server running on http://localhost:3111
+  
+4:25:48 PM [tsx] change in ./src/routes/payments.ts Restarting...
+c/Users/user/Desktop/research/wepay/api/src/server.ts:4
+import paymentRoutes from './routes/payments.js';
+       ^
+SyntaxError: The requested module './routes/payments.js' does not provide an export named 'default'
+    at #asyncInstantiate (node:internal/modules/esm/module_job:319:21)
+    at async ModuleJob.run (node:internal/modules/esm/module_job:422:5)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:654:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+Node.js v25.4.0
+4:26:10 PM [tsx] change in ./../node_modules/viem/_esm/chains/definitions/dosChainTestnet.js Rerunning...
+c
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+Error: Cannot find package '/Users/user/Desktop/research/wepay/node_modules/viem/index.js' imported from /Users/user/Desktop/research/wepay/api/src/services/wallet.ts
+    at legacyMainResolve (node:internal/modules/esm/resolve:205:26)
+    at packageResolve (node:internal/modules/esm/resolve:778:12)
+    at moduleResolve (node:internal/modules/esm/resolve:859:18)
+    at defaultResolve (node:internal/modules/esm/resolve:991:11)
+    at nextResolve (node:internal/modules/esm/hooks:769:28)
+    at resolveBase (file:///Users/user/Desktop/research/wepay/node_modules/tsx/dist/esm/index.mjs?1771428370965:2:3744)
+    at resolveDirectory (file:///Users/user/Desktop/research/wepay/node_modules/tsx/dist/esm/index.mjs?1771428370965:2:4243)
+    at resolveTsPaths (file:///Users/user/Desktop/research/wepay/node_modules/tsx/dist/esm/index.mjs?1771428370965:2:4984)
+    at resolve (file:///Users/user/Desktop/research/wepay/node_modules/tsx/dist/esm/index.mjs?1771428370965:2:5361)
+    at nextResolve (node:internal/modules/esm/hooks:769:28) {
+  code: 'ERR_MODULE_NOT_FOUND'
+}
+
+Node.js v25.4.0
+4:26:11 PM [tsx] change in ./../node_modules/viem/_esm/chains/definitions/zoraTestnet.js Rerunning...
+c/Users/user/Desktop/research/wepay/api/src/server.ts:4
+import paymentRoutes from './routes/payments.js';
+       ^
+SyntaxError: The requested module './routes/payments.js' does not provide an export named 'default'
+    at #asyncInstantiate (node:internal/modules/esm/module_job:319:21)
+    at async ModuleJob.run (node:internal/modules/esm/module_job:422:5)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:654:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+Node.js v25.4.0
+4:27:52 PM [tsx] change in ./src/config.ts Rerunning...
+c/Users/user/Desktop/research/wepay/api/src/server.ts:4
+import paymentRoutes from './routes/payments.js';
+       ^
+SyntaxError: The requested module './routes/payments.js' does not provide an export named 'default'
+    at #asyncInstantiate (node:internal/modules/esm/module_job:319:21)
+    at async ModuleJob.run (node:internal/modules/esm/module_job:422:5)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:654:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+Node.js v25.4.0
+4:28:08 PM [tsx] change in ./src/services/payment.ts Rerunning...
+c/Users/user/Desktop/research/wepay/api/src/server.ts:4
+import paymentRoutes from './routes/payments.js';
+       ^
+SyntaxError: The requested module './routes/payments.js' does not provide an export named 'default'
+    at #asyncInstantiate (node:internal/modules/esm/module_job:319:21)
+    at async ModuleJob.run (node:internal/modules/esm/module_job:422:5)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:654:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+Node.js v25.4.0
+4:30:17 PM [tsx] change in ./src/routes/payments.ts Rerunning...
+cnode:events:486
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::3111
+    at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+    at listenInCluster (node:net:1997:12)
+    at Server.listen (node:net:2102:7)
+    at app.listen (/Users/user/Desktop/research/wepay/api/node_modules/express/lib/application.js:635:24)
+    at <anonymous> (/Users/user/Desktop/research/wepay/api/src/server.ts:33:5)
+    at ModuleJob.run (node:internal/modules/esm/module_job:430:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:654:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1976:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -48,
+  syscall: 'listen',
+  address: '::',
+  port: 3111
+}
+
+Node.js v25.4.0
+4:40:13 PM [tsx] change in ./src/services/payment.ts Rerunning...
+cnode:events:486
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::3111
+    at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+    at listenInCluster (node:net:1997:12)
+    at Server.listen (node:net:2102:7)
+    at app.listen (/Users/user/Desktop/research/wepay/api/node_modules/express/lib/application.js:635:24)
+    at <anonymous> (/Users/user/Desktop/research/wepay/api/src/server.ts:33:5)
+    at ModuleJob.run (node:internal/modules/esm/module_job:430:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:654:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1976:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -48,
+  syscall: 'listen',
+  address: '::',
+  port: 3111
+}
+
+Node.js v25.4.0
+4:41:05 PM [tsx] change in ./src/routes/payments.ts Rerunning...
+c
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+Error [TransformError]: Transform failed with 1 error:
+/Users/user/Desktop/research/wepay/api/src/routes/payments.ts:73:8: ERROR: Unexpected "export"
+    at failureErrorWithLog (/Users/user/Desktop/research/wepay/node_modules/esbuild/lib/main.js:1467:15)
+    at /Users/user/Desktop/research/wepay/node_modules/esbuild/lib/main.js:736:50
+    at responseCallbacks.<computed> (/Users/user/Desktop/research/wepay/node_modules/esbuild/lib/main.js:603:9)
+    at handleIncomingPacket (/Users/user/Desktop/research/wepay/node_modules/esbuild/lib/main.js:658:12)
+    at Socket.readFromStdout (/Users/user/Desktop/research/wepay/node_modules/esbuild/lib/main.js:581:7)
+    at Socket.emit (node:events:508:20)
+    at addChunk (node:internal/streams/readable:564:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:515:3)
+    at Readable.push (node:internal/streams/readable:395:5)
+    at Pipe.onStreamRead (node:internal/stream_base_commons:189:23)
+
+Node.js v25.4.0

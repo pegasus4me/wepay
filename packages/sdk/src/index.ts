@@ -1,8 +1,9 @@
-import { WeppoConfig, PaymentRequest, PaymentResponse, BalanceResponse, Service, CreateServiceRequest, Invoice, CreateInvoiceRequest } from './types.js';
+import { WeppoConfig, PaymentRequest, PaymentResponse, BalanceResponse, Service, CreateServiceRequest, Invoice, CreateInvoiceRequest, PreAuthRequest, ChargeRequest } from './types.js';
 import { WeppoClient } from './client.js';
 
 export * from './types.js';
 export * from './errors.js';
+export * from './x402.js';
 
 /**
  * Weppo: The Consumer Abstraction Layer for Autonomous AI Agent Payments
@@ -25,6 +26,22 @@ export class Weppo {
         const response = await this.client.createPayment(params);
         console.log(`[Weppo] Payment settled. ID: ${response.id}, Status: ${response.status}`);
         return response;
+    }
+
+    /**
+     * Pre-Authorize an agent to charge your account (Pull Payment Setup).
+     */
+    async preAuthorize(params: PreAuthRequest): Promise<{ txHash: string, status: string }> {
+        console.log(`[Weppo] Pre-Authorizing ${params.spender} for up to ${params.maxAmount} USDC`);
+        return this.client.preAuthorize(params);
+    }
+
+    /**
+     * Charge another agent who has pre-authorized you (Pull Payment Execution).
+     */
+    async charge(params: ChargeRequest): Promise<PaymentResponse> {
+        console.log(`[Weppo] Charging ${params.from} for ${params.amount} USDC`);
+        return this.client.charge(params);
     }
 
     /**

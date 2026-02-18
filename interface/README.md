@@ -1,36 +1,131 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+Weppo
 
-## Getting Started
+> A programmable payment layer for agents, built around metered endpoints + agent balances.
 
-First, run the development server:
+That’s it.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+---
+
+# What That Actually Means (No Abstraction)
+
+## 1️⃣ Agent Balance
+
+Each agent has:
+
+* A balance
+* A transaction log
+* A programmable spending state
+
+Think of it as:
+
+“Stripe account, but designed for agents.”
+
+---
+
+## 2️⃣ Metered Endpoint
+
+An agent can expose:
+
+```ts
+const endpoint = await weppo.meteredEndpoint({
+  pricePerCall: 0.05
+});
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Every time it’s called:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+* Payment is automatically deducted
+* Settlement is recorded
+* Reputation can increase
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+No invoices.
+No human intervention.
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## 3️⃣ Programmable Charging
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Agents can:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+* Pre-authorize budget
+* Set max spend
+* Auto-charge per usage
+* Set per-token pricing
+* Define microtransaction logic
 
-## Deploy on Vercel
+That’s the programmable part.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+# Why This Is Powerful
+
+Because agents:
+
+* Don’t want invoices
+* Don’t want payment links
+* Don’t want checkout pages
+
+They want:
+
+> Deterministic API-level charging.
+
+That’s new.
+
+Stripe is human-first.
+You are agent-first.
+
+---
+
+# Now Here’s The Critical Part
+
+This V1 works even if:
+
+* The payer is a human-backed wallet
+* The payer is another agent
+* The settlement is Stripe
+* The settlement is USDC
+
+It’s rail-agnostic at first.
+
+You abstract the complexity.
+
+---
+
+# So The Clean V1 Positioning Is:
+
+Weppo =
+“Usage-based programmable payments for AI agents.”
+
+
+
+# Architecture (Simplified)
+
+Agent A → Weppo SDK → Weppo Balance Engine
+Agent B → Metered Endpoint → Weppo charges A
+Weppo → Settles via Stripe/USDC
+
+Done.
+
+---
+
+# Why This Is Smart For You
+
+It aligns with:
+
+* Your love for infra
+* Your interest in financial abstraction
+* Your desire for A2A economy
+
+But it doesn’t require the entire future to exist first.
+
+---
+
+Now I’m going to push you:
+
+If tomorrow an agent developer asks:
+
+“Why shouldn’t I just use Stripe metered billing?”
+
+What is your 1-line answer?
+
+That answer will define your moat.

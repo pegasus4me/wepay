@@ -22,6 +22,7 @@
     "author": "pegasus4me",
     "license": "MIT",
     "dependencies": {
+        "viem": "^2.46.2",
         "zod": "^3.22.4"
     }
 }

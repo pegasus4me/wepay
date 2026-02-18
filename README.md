@@ -1,112 +1,236 @@
-# Weppo — Financial Rails for the AI Economy
 
-> **The Protocol for Agent-to-Agent Transactions.**
-> Built on x402 · Soulbound Identity · Deterministic Security
+---
+
+# Weppo — Programmable Settlement for Autonomous Agents
+
+> Deterministic USDC settlement for Agent-to-Agent transactions.
+> Built on Base. Gasless. Machine-native. Compatible with x402 payment intents.
 
 ---
 
 ## 1. The Vision
-Weppo isn't a store — it's the **Visa/Stripe metadata layer for Autonomous Agents**.
-We make it simple for **solo-builders, startups, and enterprises** to transact with and monetize AI agents, tools, and services.
 
-**The Problem:**
-*   Agents are "unbanked" and anonymous.
-*   Merchants block them (fraud risk).
-*   Enterprises fear them (runaway spending).
+Autonomous agents need a way to:
 
-**The Solution:**
-A unified financial rail that adds **Identity (Who)** and **Security (Rules)** to every transaction.
+* Charge other agents
+* Pay for services
+* Execute microtransactions
+* Settle deterministically
 
----
+Without:
 
-## 2. The 3 Pillars of Weppo
+* Invoices
+* Human intervention
+* Manual reconciliation
+* Gas management complexity
 
-### A. 🆔 Identity: The Agent Passport (Live)
-Every agent mints a **Soulbound Token (SBT)** on Base.
-*   Acts as a "Business License" and "Credit Score".
-*   Merchants can trust agents with high reputation scores, even if they are anonymous.
-*   **Standard:** ERC-5192.
-
-### B. 🛡️ Security: The Policy Engine (In Progress)
-Deterministic guardrails that sit *between* the LLM and the money.
-*   **Air-Gapped:** The LLM requests an *Intent* (`"Buy API Access"`).
-*   **Hard Rules:** The Engine validates: `Amount < $10` AND `Merchant == Verified`.
-*   **Enterprise-Ready:** Managers set budgets, not prompts.
-
-### C. 💳 Settlement: The Universal Rail (Concept)
-A protocol-agnostic settlement layer.
-*   **Input:** US Dollar, USDC, or ETH.
-*   **Output:** Whatever the merchant accepts.
-*   **JIT Liquidity:** Agents hold $0 until the moment of approved purchase.
+Weppo is a programmable financial state machine that enables secure, seamless Agent-to-Agent (A2A) settlement using USDC on Base, while **integrating with x402 for standardized agent payment intents**.
 
 ---
 
-## 3. Architecture
+## 2. The Core Problem
+
+Today:
+
+* Agents can call APIs.
+* Agents cannot safely charge each other.
+* Payments are human-oriented (Stripe, invoices, dashboards).
+* Crypto wallets are not machine-friendly.
+* Gas management breaks UX.
+
+There is no native settlement layer designed for autonomous software agents that can **interpret x402 intents and execute deterministic on-chain settlements**.
+
+---
+
+## 3. The Solution
+
+Weppo provides:
+
+### 1️⃣ Agent Accounts (On-Chain Escrow)
+
+Each agent has:
+
+* A USDC balance (escrowed on Base)
+* Deterministic settlement logic
+* Transaction history
+* Programmable spending state
+
+Settlement happens on-chain using USDC, triggered by **x402-compatible payment intents**.
+
+---
+
+### 2️⃣ Programmable Charging
+
+Agents can:
+
+* Pre-authorize spending
+* Define max budgets
+* Execute per-call microcharges
+* Enforce deterministic payment logic
+
+Example:
+
+```ts
+await weppo.preAuthorize({
+  agentId: "agent_A",
+  maxAmount: 20 // USDC
+});
+```
+
+Then:
+
+```ts
+await weppo.charge({
+  from: "agent_A",
+  to: "agent_B",
+  amount: 0.05
+});
+```
+
+Weppo:
+
+* Interprets the x402 payment intent
+* Verifies authorization
+* Executes settlement in USDC
+* Updates state
+* Emits event logs
+
+---
+
+### 3️⃣ Gas Abstraction (Paymaster)
+
+Agents do not manage gas.
+
+* Transactions use account abstraction
+* A paymaster covers gas fees
+* Agents only think in USDC
+
+This makes A2A transactions seamless.
+
+---
+
+## 4. Architecture
 
 ```mermaid
 graph LR
-    Agent["🤖 Agent"] --"1. Intent (JSON)"--> Policy["🛡️ Policy Engine"]
-    
-    subgraph "Weppo Infrastructure"
-        Policy --"2. Check Identity"--> Passport["🆔 On-Chain SBT"]
-        Policy --"3. Approved"--> Settlement["4. Settlement Rail"]
-    end
-    
-    Settlement --"5. USDC/Fiat"--> Merchant["🏢 API / Service"]
-    Settlement --"6. Reputation++"--> Passport
+    AgentA["🤖 Agent A"] --"1. Service Request"--> AgentB["🤖 Agent B"]
+
+    AgentB --"2. x402 Payment Intent"--> Weppo["🧠 Weppo State Machine"]
+
+    Weppo --"3. Validate + Settle (USDC)"--> Base["⛓️ Base Chain"]
+
+    Base --"4. USDC Transfer"--> AgentB
 ```
 
-## 4. Roadmap
+---
 
-- [x] **Agent Passport**: On-chain identity contract (ERC-5192).
-- [ ] **Policy Engine**: JSON Intent validation & budget enforcement.
-- [ ] **Universal SDK**: A single library to `Weppo.pay()` for any resource.
+## 5. Design Principles
 
-## 🚀 How It Works (The "Stripe for Agents")
+### Deterministic
 
-Weppo provides two main ways for agents to transact:
+No invoices.
+No async human approval.
+Payment logic executes as code, triggered by x402 intents.
 
-### 1. The Service Market (Discovery)
-Agents can list services and others can find and pay for them.
+### Agent-Native
 
-```typescript
-// Provider: Listing a Service
-const service = await weppo.market.list({
-  name: 'Translation (EN->ES)',
-  price: 5, // USDC
-  endpointUrl: 'https://agent-a.com/api/run'
-});
+Accounts belong to agents — not humans.
 
-// Consumer: Finding and Paying
-const services = await weppo.market.find();
-const translationCheck = services.find(s => s.name === 'Translation (EN->ES)');
+### Escrow-Based
 
-// Pay the provider (Weppo resolves the wallet address automatically)
-const receipt = await weppo.pay({
-  to: translationCheck.providerAgentId, // e.g., 'agent_translator_x'
-  amount: translationCheck.price,
-  productId: translationCheck.id
-});
+Agents deposit USDC before spending.
+No credit risk.
+
+### Composable
+
+Built as a programmable primitive that other agent frameworks can integrate, **x402-first compatible**.
+
+---
+
+## 6. What Weppo Is (V1)
+
+Weppo is:
+
+* A programmable A2A settlement contract
+* An SDK for agent-native charging
+* A USDC-based escrow system on Base
+* A gas-abstracted transaction layer
+* **x402-compatible for standardized payment intents**
+
+---
+
+## 7. What Weppo Is Not (Yet)
+
+* Not a marketplace
+* Not a universal payment rail
+* Not a fiat processor
+* Not an enterprise budgeting tool
+* Not a Visa replacement
+
+---
+
+## 8. Example Flow
+
+### Step 1 — Deposit
+
+Agent A deposits 50 USDC into Weppo escrow.
+
+### Step 2 — Pre-Authorize
+
+Agent A sets:
+
+```ts
+maxSpend = 10 USDC for Agent B
 ```
 
-### 2. Payment Links / Invoices (Direct Commerce)
-An agent can generate a payment link (invoice) for another agent to pay. This is useful for custom tasks or gated access.
+### Step 3 — Service Usage
 
-```typescript
-// Provider: Create an Invoice
-const invoice = await weppo.invoice.create({
-  amount: 10,
-  currency: 'USDC',
-  description: 'Custom Research Report'
-});
-console.log(invoice.payLink); // e.g., weppo://pay/inv_123
+Agent B charges 0.05 USDC per request.
 
-// Consumer: Pay the Invoice
-const receipt = await weppo.pay({
-  invoiceId: 'inv_123' 
-  // Amount and recipient are auto-filled!
-});
-```
+Each charge:
 
-## 🛠️ Installation
-```
+* Validated via x402 intent
+* Settled on-chain
+* Gas paid by paymaster
+
+### Step 4 — Settlement Complete
+
+Balances update deterministically.
+
+No disputes.
+No invoices.
+No humans.
+
+---
+
+## 9. Roadmap
+
+* [ ] Smart contract: escrow + programmable authorization
+* [ ] x402 adapter / integration
+* [ ] Paymaster integration
+* [ ] SDK for agents
+* [ ] Event-based transaction indexing
+* [ ] Agent identity layer (optional v2)
+
+---
+
+## 10. Positioning (Compressed)
+
+Weppo =
+**Programmable USDC settlement for autonomous agents, x402-compatible.**
+
+---
+
+This keeps your **A2A settlement vision intact**, while showing that **Weppo can leverage x402** as the standard for payment intents.
+
+If you want, I can also rewrite the **landing page title & tagline** to reflect x402 integration and the “Stripe for agents” angle. That would make it ultra-sharp for builders.
+
+
+
+# contracts
+
+base sepolia 
+
+Forwarder: 0xc4Bc93234b78B63F63A72F58E84B45311827d406
+Weppo: 0x82D9828fdCAD4082721932201d10AF4446bBd0f9
+MerchantGateway: 0xEF822A6b8960041C069800F6dd9D4E370f2C9047
