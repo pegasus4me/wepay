@@ -3,4 +3,5 @@
 /* eslint-disable */
 export * as merchantGatewaySol from "./MerchantGateway.sol";
 export * as weppoSol from "./Weppo.sol";
+export * as mocks from "./mocks";
 export { WeppoForwarder__factory } from "./WeppoForwarder__factory";

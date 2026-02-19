@@ -1,4 +1,15 @@
-import { WeppoConfig, PaymentRequest, PaymentResponse, BalanceResponse, Service, CreateServiceRequest, Invoice, CreateInvoiceRequest, PreAuthRequest, ChargeRequest } from './types.js';
+import {
+    WeppoConfig,
+    PaymentRequest,
+    PaymentResponse,
+    BalanceResponse,
+    Service,
+    CreateServiceRequest,
+    Invoice,
+    CreateInvoiceRequest,
+    PreAuthRequest,
+    ChargeRequest
+} from './types.js';
 import { WeppoClient } from './client.js';
 
 export * from './types.js';

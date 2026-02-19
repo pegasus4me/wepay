@@ -1,6 +1,3 @@
-
----
-
 # Weppo — Programmable Settlement for Autonomous Agents
 
 > Deterministic USDC settlement for Agent-to-Agent transactions.
@@ -124,7 +121,68 @@ graph LR
 
 ---
 
-## 5. Design Principles
+## 5. Why Weppo (vs raw x402)
+
+x402 is the payment handshake. Weppo is the platform layer that makes agent monetization easy to ship.
+
+Weppo adds:
+
+* **Escrow + budgets** for deterministic spending controls
+* **Pre-authorization** so agents can charge each other safely without human approval
+* **Dashboard UX** to manage endpoints, pricing, and analytics
+* **Onboarding flow** so builders do not implement x402 server logic from scratch
+* **Billing models beyond per-request** (metered, tiered, subscriptions)
+* **Optional discovery directory** so agents can be found and contacted (not a full marketplace)
+
+This is the "Stripe for agents" layer: a simple config, a few SDK calls, and your agent is paid.
+
+---
+
+## 6. Identity + Discovery (ERC-8004 + SKILL.md)
+
+Weppo can integrate with Base's agent identity and discovery primitives:
+
+* **ERC-8004 registry** to make agents verifiable and discoverable
+* **SKILL.md metadata** so pricing and endpoint definitions can auto-generate Weppo charging rules
+
+This lets builders declare pricing once and get x402-compatible monetization out of the box.
+
+---
+
+## 7. SKILL.md Auto-Config (Example)
+
+Declare pricing once in `SKILL.md`:
+
+```md
+name: SummarizeDoc
+pricing:
+  model: per_request
+  price_usdc: 0.05
+auth:
+  mode: pre_authorize
+  max_usdc: 10
+```
+
+Weppo config generated from the skill:
+
+```json
+{
+  "agentId": "agent_B",
+  "pricing": { "type": "per_request", "priceUsdc": 0.05 },
+  "authorization": { "mode": "pre_authorize", "maxUsdc": 10 },
+  "x402": { "enabled": true }
+}
+```
+
+---
+
+## 8. MerchantGateway (Human-Facing Layer)
+
+`MerchantGateway` is the contract that supports dashboard-driven monetization: registering endpoints, setting pricing, and routing x402 intents to Weppo settlement. It bridges human configuration with on-chain escrow and settlement, enabling the "Stripe for agents" workflow.
+
+---
+
+## 9. Design Principles
 
 ### Deterministic
 
@@ -147,7 +205,7 @@ Built as a programmable primitive that other agent frameworks can integrate, **x
 
 ---
 
-## 6. What Weppo Is (V1)
+## 10. What Weppo Is (V1)
 
 Weppo is:
 
@@ -159,9 +217,9 @@ Weppo is:
 
 ---
 
-## 7. What Weppo Is Not (Yet)
+## 11. What Weppo Is Not (Yet)
 
-* Not a marketplace
+* Not a full marketplace (no bidding, reviews, or escrowed dispute resolution)
 * Not a universal payment rail
 * Not a fiat processor
 * Not an enterprise budgeting tool
@@ -169,7 +227,7 @@ Weppo is:
 
 ---
 
-## 8. Example Flow
+## 12. Example Flow
 
 ### Step 1 — Deposit
 
@@ -203,33 +261,28 @@ No humans.
 
 ---
 
-## 9. Roadmap
+## 13. Roadmap
 
+* [ ] SDK for agents
+* [ ] SKILL.md auto-config + ERC-8004 identity integration
 * [ ] Smart contract: escrow + programmable authorization
 * [ ] x402 adapter / integration
 * [ ] Paymaster integration
-* [ ] SDK for agents
 * [ ] Event-based transaction indexing
-* [ ] Agent identity layer (optional v2)
+* [ ] Optional discovery directory
 
 ---
 
-## 10. Positioning (Compressed)
+## 14. Positioning (Compressed)
 
 Weppo =
 **Programmable USDC settlement for autonomous agents, x402-compatible.**
 
 ---
 
-This keeps your **A2A settlement vision intact**, while showing that **Weppo can leverage x402** as the standard for payment intents.
-
-If you want, I can also rewrite the **landing page title & tagline** to reflect x402 integration and the “Stripe for agents” angle. That would make it ultra-sharp for builders.
-
-
-
 # contracts
 
-base sepolia 
+base sepolia
 
 Forwarder: 0xc4Bc93234b78B63F63A72F58E84B45311827d406
 Weppo: 0x82D9828fdCAD4082721932201d10AF4446bBd0f9

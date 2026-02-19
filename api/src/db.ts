@@ -52,6 +52,14 @@ db.exec(`
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(agent_id) REFERENCES agents(id)
   );
+
+  CREATE TABLE IF NOT EXISTS api_keys (
+    key_hash TEXT PRIMARY KEY,
+    agent_id TEXT NOT NULL,
+    label TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(agent_id) REFERENCES agents(id)
+  );
 `);
 
 export default db;

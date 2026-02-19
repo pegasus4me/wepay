@@ -4,4 +4,6 @@ export declare const config: {
     privateKey: `0x${string}`;
     rpcUrl: string;
     usdcAddress: `0x${string}`;
+    weppoAddress: `0x${string}`;
+    forwarderAddress: `0x${string}`;
 };

@@ -15,7 +15,12 @@ router.post('/', async (req, res) => {
         // Track gas sponsorship
         // await paymasterService.trackSponsorship(result.hash, result.gasUsed, result.effectiveGasPrice);
 
-        res.json({ status: 'confirmed', ...result });
+        res.json({
+            status: 'confirmed',
+            ...result,
+            gasUsed: result.gasUsed.toString(),
+            effectiveGasPrice: result.effectiveGasPrice.toString()
+        });
     } catch (error: any) {
         res.status(500).json({ error: error.message });
     }
@@ -43,7 +48,12 @@ router.post('/charge', async (req, res) => {
     try {
         const { from, amount, memo } = req.body;
         const result = await paymentService.executeCharge(from, amount, memo);
-        res.json({ status: 'confirmed', ...result });
+        res.json({
+            status: 'confirmed',
+            ...result,
+            gasUsed: result.gasUsed.toString(),
+            effectiveGasPrice: result.effectiveGasPrice.toString()
+        });
     } catch (error: any) {
         res.status(500).json({ error: error.message });
     }
@@ -67,7 +77,17 @@ router.post('/pre-authorize-meta', async (req, res) => {
 router.post('/charge-meta', async (req, res) => {
     try {
         const { request } = req.body;
-        console.log('[API] Relaying Charge Meta-Tx', request);
+        const result = await paymentService.relayTransaction(request);
+        res.json({
+            status: 'confirmed',
+            ...result,
+            gasUsed: result.gasUsed.toString(),
+            effectiveGasPrice: result.effectiveGasPrice.toString()
+        });
+    } catch (error: any) {
+        console.error('[API] Relaying Failed:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
 
-
-        export default router;
+export default router;

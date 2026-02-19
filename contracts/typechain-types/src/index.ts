@@ -5,4 +5,6 @@ import type * as merchantGatewaySol from "./MerchantGateway.sol";
 export type { merchantGatewaySol };
 import type * as weppoSol from "./Weppo.sol";
 export type { weppoSol };
+import type * as mocks from "./mocks";
+export type { mocks };
 export type { WeppoForwarder } from "./WeppoForwarder";

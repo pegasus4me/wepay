@@ -7,5 +7,18 @@ export declare class PaymentService {
         gasUsed: bigint;
         effectiveGasPrice: bigint;
     }>;
+    executePreAuth(spender: string, maxAmount: number): Promise<{
+        hash: string;
+    }>;
+    executeCharge(from: string, amount: number, memo: string): Promise<{
+        hash: string;
+        gasUsed: bigint;
+        effectiveGasPrice: bigint;
+    }>;
+    relayTransaction(request: any): Promise<{
+        hash: string;
+        gasUsed: bigint;
+        effectiveGasPrice: bigint;
+    }>;
     getExplorerUrl(hash: string): string;
 }
