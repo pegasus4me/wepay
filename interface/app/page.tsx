@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-
+import logowhite from "@/public/logo-white.png"
 import { WaitlistForm } from "./components/waitlist-form";
 
 export default function Home() {

@@ -1,9 +1,10 @@
 import Link from "next/link";
-
+import logowhite from "@/public/logo-white.png"
+import Image from "next/image";
 export function HeaderPage() {
     return (
         <header className="flex items-center justify-between mt-6 mb-20">
-            <h2 className="text-2xl font-light">weppo</h2>
+            <Image src={logowhite} alt="logo" width={100} height={100} />
             <nav className="flex items-center justify-between">
                 <ul className="flex items-center justify-between gap-4 text-sm text-neutral-400">
                     <li><Link href="/" className="hover:text-white transition-colors">Home</Link></li>
