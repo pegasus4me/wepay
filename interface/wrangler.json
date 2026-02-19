@@ -1,1 +1,5 @@
-{"name": "wepay-interface", "compatibility_date": "2024-02-18", "pages_build_output_dir": ".vercel/output/static"}
+{
+    "name": "weppo-exp",
+    "compatibility_date": "2024-02-18",
+    "pages_build_output_dir": ".vercel/output/static"
+}
