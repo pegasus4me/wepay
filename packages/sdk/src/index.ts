@@ -5,8 +5,8 @@ import {
     BalanceResponse,
     Service,
     CreateServiceRequest,
-    Invoice,
-    CreateInvoiceRequest,
+    PaymentIntent,
+    CreatePaymentIntentRequest,
     PreAuthRequest,
     ChargeRequest
 } from './types.js';
@@ -30,80 +30,63 @@ export class Weppo {
     }
 
     /**
-     * Execute a payment. The agent does not need to handle wallets or keys.
+     * Payments: Direct P2P transfers
      */
-    async pay(params: PaymentRequest): Promise<PaymentResponse> {
-        console.log(`[Weppo] Initiating payment of ${params.amount} ${params.currency} to ${params.to}`);
-        const response = await this.client.createPayment(params);
-        console.log(`[Weppo] Payment settled. ID: ${response.id}, Status: ${response.status}`);
-        return response;
+    async pay(recipient: string, amount: number) {
+        return this.client.createPayment({
+            to: recipient,
+            amount,
+            currency: 'USDC' // Default for now
+        });
     }
 
-    /**
-     * Pre-Authorize an agent to charge your account (Pull Payment Setup).
-     */
-    async preAuthorize(params: PreAuthRequest): Promise<{ txHash: string, status: string }> {
-        console.log(`[Weppo] Pre-Authorizing ${params.spender} for up to ${params.maxAmount} USDC`);
-        return this.client.preAuthorize(params);
+    async preAuthorize(spender: string, maxAmount: number) {
+        return this.client.preAuthorize({ spender, maxAmount });
     }
 
-    /**
-     * Charge another agent who has pre-authorized you (Pull Payment Execution).
-     */
-    async charge(params: ChargeRequest): Promise<PaymentResponse> {
-        console.log(`[Weppo] Charging ${params.from} for ${params.amount} USDC`);
-        return this.client.charge(params);
+    async charge(from: string, amount: number, memo?: string) {
+        return this.client.charge({ from, amount, memo });
     }
 
-    /**
-     * Check the agent's available balance.
-     */
-    async getBalance(): Promise<BalanceResponse> {
+    async getBalance() {
         return this.client.getBalance();
     }
 
     /**
-     * Get historical details of a payment.
+     * Market: Service Discovery
      */
-    async getPaymentDetails(paymentId: string): Promise<PaymentResponse> {
-        return this.client.getPayment(paymentId);
-    }
-
-    /**
-     * Agent Market: Discovery & Commerce
-     */
-    public market = {
+    market = {
         /**
-         * List a service in the Weppo Registry.
+         * List available agent services.
          */
-        list: async (params: CreateServiceRequest): Promise<Service> => {
-            return this.client.createService(params);
+        list: async (): Promise<Service[]> => {
+            return this.client.listServices();
         },
 
         /**
-         * Find available services.
+         * Register a new service.
          */
-        find: async (): Promise<Service[]> => {
-            return this.client.listServices();
+        register: async (params: CreateServiceRequest): Promise<Service> => {
+            return this.client.createService(params);
         }
     };
 
     /**
-     * Invoices: Payment Links
+     * Payment Intents: x402 Payment Requests
      */
-    public invoice = {
+    paymentIntent = {
         /**
-         * Create a new Payment Link / Invoice.
+         * Create a new Payment Intent.
          */
-        create: async (params: CreateInvoiceRequest): Promise<Invoice> => {
-            return this.client.createInvoice(params);
+        create: async (params: CreatePaymentIntentRequest): Promise<PaymentIntent> => {
+            return this.client.createPaymentIntent(params);
         },
 
         /**
-         * Get an invoice by ID.
+         * Get status of a Payment Intent.
          */
-        get: async (id: string): Promise<Invoice> => {
-            return this.client.getInvoice(id);
+        get: async (id: string): Promise<PaymentIntent> => {
+            return this.client.getPaymentIntent(id);
         }
     };
 }

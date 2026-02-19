@@ -1,14 +1,40 @@
-export interface WePayConfig {
+export interface WeppoConfig {
     apiKey: string;
     agentId: string;
     baseUrl?: string;
+    privateKey?: string;
+    forwarderAddress?: string;
+    weppoAddress?: string;
+}
+export interface ForwardRequest {
+    from: string;
+    to: string;
+    value: bigint;
+    gas: bigint;
+    nonce: bigint;
+    deadline: number;
+    data: string;
+    signature?: string;
 }
 export interface PaymentRequest {
-    to: string;
-    amount: number;
+    to?: string;
+    amount?: number;
     currency?: string;
     memo?: string;
     productId?: string;
+    invoiceId?: string;
+}
+export interface PreAuthRequest {
+    spender: string;
+    maxAmount: number;
+    currency?: string;
+}
+export interface ChargeRequest {
+    from: string;
+    amount: number;
+    currency?: string;
+    memo?: string;
+    invoiceId?: string;
 }
 export interface PaymentResponse {
     id: string;
@@ -24,4 +50,41 @@ export interface BalanceResponse {
     amount: number;
     currency: string;
     walletAddress: string;
+}
+export interface Service {
+    id: string;
+    providerAgentId: string;
+    name: string;
+    description?: string;
+    price: number;
+    currency: string;
+    endpointUrl: string;
+    collateralAmount: number;
+    createdAt: string;
+}
+export interface CreateServiceRequest {
+    name: string;
+    description?: string;
+    price: number;
+    currency: string;
+    endpointUrl: string;
+    collateralAmount?: number;
+}
+export interface PaymentIntent {
+    id: string;
+    agentId: string;
+    amount: number;
+    currency: string;
+    description?: string;
+    status: 'pending' | 'paid' | 'cancelled';
+    payerId?: string;
+    paymentHash?: string;
+    createdAt: string;
+    payLink?: string;
+}
+export interface CreatePaymentIntentRequest {
+    amount: number;
+    currency: string;
+    description?: string;
+    payerId?: string;
 }

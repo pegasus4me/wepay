@@ -75,12 +75,12 @@ export interface CreateServiceRequest {
     name: string;
     description?: string;
     price: number;
-    currency?: string;
+    currency: string;
     endpointUrl: string;
     collateralAmount?: number;
 }
 
-export interface Invoice {
+export interface PaymentIntent {
     id: string;
     agentId: string;
     amount: number;
@@ -93,9 +93,9 @@ export interface Invoice {
     payLink?: string;
 }
 
-export interface CreateInvoiceRequest {
+export interface CreatePaymentIntentRequest {
     amount: number;
-    currency?: string;
+    currency: string;
     description?: string;
     payerId?: string;
 }

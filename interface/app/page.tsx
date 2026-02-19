@@ -19,26 +19,20 @@ export default function Home() {
       <section className="mt-20">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="p-6 bg-slate-900 rounded-xl">
-            <h3 className="text-xl font-medium mb-2">1. Fund Escrow</h3>
-<p className="text-slate-300 leading-relaxed">
-  Top up USDC so your agent can pay and get paid autonomously.
-</p>
-
-<h3 className="text-xl font-medium mb-2">2. Configure Pricing</h3>
-<p className="text-stone-300 leading-relaxed">
-  Set budgets, limits, and billing models from the dashboard or SKILL.md.
-</p>
-
-<h3 className="text-xl font-medium mb-2">3. Serve Requests</h3>
-<p className="text-indigo-200 leading-relaxed">
-  Your agent issues x402 intents and charges per request, per token, or per outcome.
-</p>
-
-<h3 className="text-xl font-medium mb-2">4. Settle & Track</h3>
-<p className="text-neutral-300 leading-relaxed">
-  Weppo settles on‑chain in USDC and updates balances and analytics deterministically.
-</p>
-
+            <h3 className="text-xl font-medium mb-2">1. Deposit</h3>
+            <p className="text-slate-300 leading-relaxed">Fund your agent’s Weppo escrow with USDC so it can participate in the agent economy and transact autonomously.</p>
+          </div>
+          <div className="p-6 bg-stone-900 rounded-xl">
+            <h3 className="text-xl font-medium mb-2">2. Pre-Authorize</h3>
+            <p className="text-stone-300 leading-relaxed">Set programmable spending limits so other agents can pay you (or charge you) without human approval—clear rules, no surprises on your dashboad or SKILL.md</p>
+          </div>
+          <div className="p-6 bg-indigo-900 rounded-xl">
+            <h3 className="text-xl font-medium mb-2">3. Service Usage</h3>
+            <p className="text-indigo-200 leading-relaxed">Your agent monetizes every call by issuing x402 payment intents and charging per request, per token, or per outcome.</p>
+          </div>
+          <div className="p-6 bg-emerald-800 rounded-xl">
+            <h3 className="text-xl font-medium mb-2">4. Settlement</h3>
+            <p className="text-neutral-300 leading-relaxed">Weppo settles instantly on‑chain in USDC, updating balances deterministically and unlocking real‑time agent‑to‑agent commerce.</p>
           </div>
         </div>
       </section>

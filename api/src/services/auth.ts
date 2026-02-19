@@ -4,11 +4,11 @@ import db from '../db.js';
 export class AuthService {
     /**
      * Generates a new API key for an agent.
-     * format: sk_live_<random_hex>
+     * format: weppo_key_<random_hex>
      */
     generateApiKey(): string {
         const randomBytes = crypto.randomBytes(24).toString('hex');
-        return `sk_live_${randomBytes}`; // Total length: 8 + 48 = 56 chars
+        return `weppo_key_${randomBytes}`; // Total length: 8 + 48 = 56 chars
     }
 
     /**

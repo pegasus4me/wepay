@@ -1,22 +1,47 @@
-import { WePayConfig, PaymentRequest, PaymentResponse, BalanceResponse } from './types.js';
+import { WeppoConfig, PaymentResponse, BalanceResponse, Service, CreateServiceRequest, PaymentIntent, CreatePaymentIntentRequest } from './types.js';
 export * from './types.js';
 export * from './errors.js';
+export * from './x402.js';
 /**
- * WePay: The Consumer Abstraction Layer for Autonomous AI Agent Payments
+ * Weppo: The Consumer Abstraction Layer for Autonomous AI Agent Payments
  */
-export declare class WePay {
+export declare class Weppo {
     private client;
-    constructor(config: WePayConfig);
+    constructor(config: WeppoConfig);
     /**
-     * Execute a payment. The agent does not need to handle wallets or keys.
+     * Payments: Direct P2P transfers
      */
-    pay(params: PaymentRequest): Promise<PaymentResponse>;
-    /**
-     * Check the agent's available balance.
-     */
+    pay(recipient: string, amount: number): Promise<PaymentResponse>;
+    preAuthorize(spender: string, maxAmount: number): Promise<{
+        txHash: string;
+        status: string;
+    }>;
+    charge(from: string, amount: number, memo?: string): Promise<PaymentResponse>;
     getBalance(): Promise<BalanceResponse>;
     /**
-     * Get historical details of a payment.
+     * Market: Service Discovery
      */
-    getPaymentDetails(paymentId: string): Promise<PaymentResponse>;
+    market: {
+        /**
+         * List available agent services.
+         */
+        list: () => Promise<Service[]>;
+        /**
+         * Register a new service.
+         */
+        register: (params: CreateServiceRequest) => Promise<Service>;
+    };
+    /**
+     * Payment Intents: x402 Payment Requests
+     */
+    paymentIntent: {
+        /**
+         * Create a new Payment Intent.
+         */
+        create: (params: CreatePaymentIntentRequest) => Promise<PaymentIntent>;
+        /**
+         * Get status of a Payment Intent.
+         */
+        get: (id: string) => Promise<PaymentIntent>;
+    };
 }

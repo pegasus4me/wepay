@@ -14,42 +14,75 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
     for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.WePay = void 0;
+exports.Weppo = void 0;
 const client_js_1 = require("./client.js");
 __exportStar(require("./types.js"), exports);
 __exportStar(require("./errors.js"), exports);
+__exportStar(require("./x402.js"), exports);
 /**
- * WePay: The Consumer Abstraction Layer for Autonomous AI Agent Payments
+ * Weppo: The Consumer Abstraction Layer for Autonomous AI Agent Payments
  */
-class WePay {
+class Weppo {
     client;
     constructor(config) {
         if (!config.apiKey)
-            throw new Error('WePay API Key is required');
+            throw new Error('Weppo API Key is required');
         if (!config.agentId)
             throw new Error('Agent ID is required');
-        this.client = new client_js_1.WePayClient(config);
+        this.client = new client_js_1.WeppoClient(config);
     }
     /**
-     * Execute a payment. The agent does not need to handle wallets or keys.
+     * Payments: Direct P2P transfers
      */
-    async pay(params) {
-        console.log(`[WePay] Initiating payment of ${params.amount} ${params.currency} to ${params.to}`);
-        const response = await this.client.createPayment(params);
-        console.log(`[WePay] Payment settled. ID: ${response.id}, Status: ${response.status}`);
-        return response;
+    async pay(recipient, amount) {
+        return this.client.createPayment({
+            to: recipient,
+            amount,
+            currency: 'USDC' // Default for now
+        });
     }
-    /**
-     * Check the agent's available balance.
-     */
+    async preAuthorize(spender, maxAmount) {
+        return this.client.preAuthorize({ spender, maxAmount });
+    }
+    async charge(from, amount, memo) {
+        return this.client.charge({ from, amount, memo });
+    }
     async getBalance() {
         return this.client.getBalance();
     }
     /**
-     * Get historical details of a payment.
+     * Market: Service Discovery
      */
-    async getPaymentDetails(paymentId) {
-        return this.client.getPayment(paymentId);
-    }
+    market = {
+        /**
+         * List available agent services.
+         */
+        list: async () => {
+            return this.client.listServices();
+        },
+        /**
+         * Register a new service.
+         */
+        register: async (params) => {
+            return this.client.createService(params);
+        }
+    };
+    /**
+     * Payment Intents: x402 Payment Requests
+     */
+    paymentIntent = {
+        /**
+         * Create a new Payment Intent.
+         */
+        create: async (params) => {
+            return this.client.createPaymentIntent(params);
+        },
+        /**
+         * Get status of a Payment Intent.
+         */
+        get: async (id) => {
+            return this.client.getPaymentIntent(id);
+        }
+    };
 }
-exports.WePay = WePay;
+exports.Weppo = Weppo;

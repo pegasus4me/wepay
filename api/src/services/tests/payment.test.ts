@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { PaymentService } from './payment.js';
+import { PaymentService } from '../payment.js';
 import { createPublicClient, createWalletClient, parseUnits } from 'viem';
 
 // Mock viem and config

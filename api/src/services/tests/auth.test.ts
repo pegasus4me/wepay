@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { AuthService } from './auth.js';
+import { AuthService } from '../auth.js';
 
 // Mock database
 const mocks = vi.hoisted(() => {

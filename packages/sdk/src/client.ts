@@ -1,7 +1,7 @@
 import { createPublicClient, createWalletClient, http, encodeFunctionData, Hex, PrivateKeyAccount, Hash } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { baseSepolia } from 'viem/chains';
-import { WeppoConfig, PaymentRequest, PaymentResponse, BalanceResponse, Service, CreateServiceRequest, Invoice, CreateInvoiceRequest, PreAuthRequest, ChargeRequest, ForwardRequest } from './types.js';
+import { WeppoConfig, PaymentRequest, PaymentResponse, BalanceResponse, Service, CreateServiceRequest, PaymentIntent, CreatePaymentIntentRequest, PreAuthRequest, ChargeRequest, ForwardRequest } from './types.js';
 import { WeppoError, AuthenticationError, InsufficientFundsError, PaymentFailedError } from './errors.js';
 
 // Minimal ABIs
@@ -153,7 +153,7 @@ export class WeppoClient {
             primaryType: 'ForwardRequest',
             message: {
                 ...request,
-                deadline: BigInt(deadline) // viem expects BigInt for uint48
+                deadline: BigInt(deadline) as any // Cast to any to bypass TS check for now
             },
         });
 
@@ -258,16 +258,16 @@ export class WeppoClient {
         return this.request<Service[]>('/market/services');
     }
 
-    // --- Invoices ---
+    // --- Payment Intents ---
 
-    async createInvoice(params: CreateInvoiceRequest): Promise<Invoice> {
-        return this.request<Invoice>('/invoices', {
+    async createPaymentIntent(params: CreatePaymentIntentRequest): Promise<PaymentIntent> {
+        return this.request<PaymentIntent>('/payment-intents', {
             method: 'POST',
             body: JSON.stringify(params),
         });
     }
 
-    async getInvoice(id: string): Promise<Invoice> {
-        return this.request<Invoice>(`/invoices/${id}`);
+    async getPaymentIntent(id: string): Promise<PaymentIntent> {
+        return this.request<PaymentIntent>(`/payment-intents/${id}`);
     }
 }
