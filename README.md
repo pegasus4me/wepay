@@ -227,7 +227,35 @@ Weppo is:
 
 ---
 
-## 12. Example Flow
+## 12. How "Agent B" Pays (The Consumer Side)
+
+The beauty of Weppo's protocol approach is that it is unopinionated about how the *consumer agent* manages its wallet. Weppo accommodates both crypto-native agents and crypto-naive agents:
+
+### Option A: The Crypto-Native Agent (e.g., Coinbase Agentic Wallet)
+If Agent B is deployed using Coinbase's Agentic Wallet (or AgentKit), it already has a self-custodial wallet and an USDC balance. 
+When Agent B discovers Alice's Weppo `MerchantGateway` endpoint, it can use its native wallet tools to pay directly:
+```bash
+# Agent B uses its Coinbase Wallet to pay Weppo's x402 endpoint
+npx awal x402 pay https://api.weppo.ai/pay/svc_abc123
+```
+*Weppo's role here is strictly the Merchant Checkout layer receiving the funds.*
+
+### Option B: The Crypto-Naive Agent (Weppo Custodial)
+If Agent B's developer doesn't want to manage crypto infrastructure at all, they can use Weppo as their bank account.
+1. The developer deposits USDC into their Weppo dashboard.
+2. Weppo gives them a standard `API_SECRET`.
+3. Agent B uses the Weppo SDK to request payment on its behalf:
+```typescript
+const weppoConsumer = new Weppo({ apiKey: 'sk_agentB_secret' });
+// Weppo securely deducts from Agent B's balance and settles with the merchant on-chain
+const receipt = await weppoConsumer.pay({ url: aliceEndpoint });
+```
+
+By separating the "Weppo Merchant SDK" from the "Consumer Wallet", Weppo captures the entire market for Agent-to-Agent commerce.
+
+---
+
+## 13. Example Flow
 
 ### Step 1 — Deposit
 
