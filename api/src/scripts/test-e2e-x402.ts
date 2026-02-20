@@ -28,7 +28,7 @@ async function runX402E2E() {
     // The Weppo SDK supports sending `productId` through the generic `pay()` interface
     // which the API parses as an x402 Intent and routes to executePurchase()
     const payData = await weppo.pay({
-        to: config.merchantGatewayAddress!,
+        to: "0xEF822A6b8960041C069800F6dd9D4E370f2C9047",
         amount: 0.1,
         memo: "E2E SDK x402 API Test",
         productId: "1234"

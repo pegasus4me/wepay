@@ -6,7 +6,8 @@
   "workspaces": [
     "packages/sdk",
     "api",
-    "interface"
+    "interface",
+    "demo"
   ],
   "scripts": {
     "dev:api": "npm run dev --workspace=api",

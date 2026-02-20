@@ -208,14 +208,20 @@ export class PaymentService {
         };
     }
 
-    async executePreAuth(spender: string, maxAmount: number): Promise<{ hash: string }> {
+    async executePreAuth(spenderId: string, maxAmount: number): Promise<{ hash: string }> {
         if (!this.account) throw new Error('Private key not configured');
 
-        // Note: In production, the user would sign this. For the POC, the server signs on behalf of the user/agent.
+        // Lookup spender's wallet address if it's an agentId
+        let spenderAddress = spenderId;
+        if (!spenderId.startsWith('0x')) {
+            const agentRow = db.prepare('SELECT wallet_address FROM agents WHERE id = ?').get(spenderId) as { wallet_address: string } | undefined;
+            if (!agentRow) throw new Error(`Agent ${spenderId} not found`);
+            spenderAddress = agentRow.wallet_address;
+        }
 
         const decimals = await this.publicClient.readContract({
             address: config.usdcAddress,
-            abi: USDC_ABI, // USDC has decimals
+            abi: USDC_ABI,
             functionName: 'decimals',
         });
         const amountInUnits = parseUnits(maxAmount.toString(), decimals);
@@ -224,15 +230,23 @@ export class PaymentService {
             address: config.weppoAddress,
             abi: WEPPO_ABI,
             functionName: 'preAuthorize',
-            args: [spender as `0x${string}`, amountInUnits],
+            args: [spenderAddress as `0x${string}`, amountInUnits],
         });
 
         await this.publicClient.waitForTransactionReceipt({ hash });
         return { hash };
     }
 
-    async executeCharge(from: string, amount: number, memo: string): Promise<{ hash: string; gasUsed: bigint; effectiveGasPrice: bigint }> {
+    async executeCharge(fromId: string, amount: number, memo: string): Promise<{ hash: string; gasUsed: bigint; effectiveGasPrice: bigint }> {
         if (!this.account) throw new Error('Private key not configured');
+
+        // Lookup sender's wallet address if it's an agentId
+        let fromAddress = fromId;
+        if (!fromId.startsWith('0x')) {
+            const agentRow = db.prepare('SELECT wallet_address FROM agents WHERE id = ?').get(fromId) as { wallet_address: string } | undefined;
+            if (!agentRow) throw new Error(`Agent ${fromId} not found`);
+            fromAddress = agentRow.wallet_address;
+        }
 
         const decimals = await this.publicClient.readContract({
             address: config.usdcAddress,
@@ -245,7 +259,7 @@ export class PaymentService {
             address: config.weppoAddress,
             abi: WEPPO_ABI,
             functionName: 'charge',
-            args: [from as `0x${string}`, amountInUnits, memo],
+            args: [fromAddress as `0x${string}`, amountInUnits, memo],
         });
 
         const receipt = await this.publicClient.waitForTransactionReceipt({ hash });

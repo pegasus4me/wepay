@@ -24,6 +24,7 @@ router.post('/', async (req, res) => {
         // await paymasterService.trackSponsorship(result.hash, result.gasUsed, result.effectiveGasPrice);
 
         res.json({
+            id: result.hash,
             status: 'confirmed',
             ...result,
             gasUsed: result.gasUsed.toString(),
@@ -47,7 +48,11 @@ router.post('/pre-authorize', async (req, res) => {
     try {
         const { spender, maxAmount } = req.body;
         const result = await paymentService.executePreAuth(spender, maxAmount);
-        res.json({ status: 'confirmed', txHash: result.hash });
+        res.json({
+            id: result.hash,
+            status: 'confirmed',
+            txHash: result.hash
+        });
     } catch (error: any) {
         res.status(500).json({ error: error.message });
     }
@@ -58,6 +63,7 @@ router.post('/charge', async (req, res) => {
         const { from, amount, memo } = req.body;
         const result = await paymentService.executeCharge(from, amount, memo);
         res.json({
+            id: result.hash,
             status: 'confirmed',
             ...result,
             gasUsed: result.gasUsed.toString(),
@@ -88,6 +94,7 @@ router.post('/charge-meta', async (req, res) => {
         const { request } = req.body;
         const result = await paymentService.relayTransaction(request);
         res.json({
+            id: result.hash,
             status: 'confirmed',
             ...result,
             gasUsed: result.gasUsed.toString(),

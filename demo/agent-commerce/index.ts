@@ -1,114 +1,100 @@
 import { MockAgent } from './framework.js';
-import { parse402Header } from '../../packages/sdk/src/x402.js';
+import { CdpClient } from '@coinbase/cdp-sdk';
 import dotenv from 'dotenv';
+import * as path from 'path';
+import { fileURLToPath } from 'url';
+import db from '../../api/src/db.js'; // Adjusting path to reach the DB in development
 
-dotenv.config();
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.join(__dirname, '../../api/.env') });
 
-// Configuration
-const WEPPO_BASE_URL = `http://localhost:${process.env.PORT || 3111}/v1`;
-const API_SECRET = process.env.API_SECRET || 'weppo_test_secret';
+const API_BASE_URL = "http://localhost:3111/v1";
+const AUTH_URL = "http://localhost:3111/auth/keys";
 
-// Bob's Service Parameters
-const POETRY_PRICE = 0.5; // USDC
-const BOB_AGENT_ID = 'provider_bob_002';
-
-async function runDirectCommerceDemo() {
-    console.log('\n======================================================');
-    console.log('🤖 AI AGENT COMMERCE DEMO (DIRECT P2P)');
-    console.log('======================================================\n');
-
-    // 1. Initialize Agents with their Personas and Weppo Monetization Layer
-    console.log('--- 1. INITIALIZING AGENTS ---');
-    const alice = new MockAgent('./demo/agent-commerce/soul-alice.json', {
-        apiKey: API_SECRET,
-        agentId: 'consumer_alice_002',
-        baseUrl: WEPPO_BASE_URL
+async function registerAgent(agentId: string, label: string) {
+    console.log(`[System] Registering ${agentId} on Weppo...`);
+    const res = await fetch(AUTH_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agentId, label })
     });
-
-    const bob = new MockAgent('./demo/agent-commerce/soul-bob.json', {
-        apiKey: API_SECRET,
-        agentId: BOB_AGENT_ID,
-        baseUrl: WEPPO_BASE_URL
-    });
-
-    await alice.logWalletStatus();
-    await bob.logWalletStatus();
-
-
-    // 2. Direct P2P Commerce Flow
-    console.log('\n--- 2. COMMERCE LOOP BEGINS ---');
-
-    console.log(`[Alice] 🔵 Sending Request: "Bob, please write me a poem about the blockchain."`);
-
-    // Simulated API Router for Bob
-    let bobResponseHeader = "";
-    let isRequestAuthorized = false; // Internal flag for Bob's virtual server
-
-    // Bob receives the request but sees Alice hasn't paid
-    if (!isRequestAuthorized) {
-        // Bob rejects with HTTP 402
-        bobResponseHeader = `Weppo realm="BobPoetryService", amount="${POETRY_PRICE}", currency="USDC", recipient="${BOB_AGENT_ID}"`;
-        console.log(`[Bob]   🔴 402 Payment Required`);
-        console.log(`        Header: ${bobResponseHeader}`);
-    }
-
-    // 3. Alice Handles the 402 Challenge
-    console.log('\n--- 3. AUTONOMOUS BUDGET AUTHORIZATION ---');
-
-    // Framework intercepts the 402 error and extracts the challenge
-    const challenge = parse402Header(bobResponseHeader);
-
-    if (!challenge || !challenge.recipient || !challenge.amount) {
-        throw new Error("Alice failed to parse Bob's 402 challenge.");
-    }
-
-    console.log(`[Alice] 🔵 Detected 402 Error. Analyzing challenge...`);
-    // Alice's LLM decides if the price is acceptable based on her persona
-    const decisionLog = await alice.generateResponse(`I encountered a 402 challenge from ${challenge.recipient} for ${challenge.amount} ${challenge.currency}. Should I pay?`);
-    console.log(decisionLog);
-
-    console.log(`[Alice] 🔵 Decision: APPROVED. Pre-Authorizing Bob to pull funds...`);
-
-    // Alice uses her Weppo Monetization layer to grant a budget (PreAuth)
-    if (!alice.weppo) throw new Error("Alice has no Weppo SDK attached!");
-    const authResult = await alice.weppo.preAuthorize(
-        challenge.recipient,
-        5.0 // Alice authorizes a budget up to 5 USDC for Bob
-    );
-
-    console.log(`[Alice] ✅ Authorization confirmed on-chain! Tx: ${authResult.txHash}`);
-    console.log(`[Alice] 🔵 Retrying request to Bob...`);
-    isRequestAuthorized = true; // Alice retries, the server sees she's authorized
-
-
-    // 4. Bob Fulfills the Request
-    console.log('\n--- 4. FULFILLMENT & CHARGE ---');
-    if (isRequestAuthorized) {
-        console.log(`[Bob]   🟣 Verifying authorization...`);
-
-        // Bob pulls the funds from Alice using his Weppo SDK
-        if (!bob.weppo) throw new Error("Bob has no Weppo SDK attached!");
-        const chargeResult = await bob.weppo.charge(
-            'consumer_alice_002',
-            parseFloat(challenge.amount),
-            "Poetry Generation: Blockchain"
-        );
-
-        console.log(`[Bob]   ✅ Successfully pulled ${chargeResult.amount} ${chargeResult.currency} from Alice.`);
-        console.log(`        Receipt ID: ${chargeResult.id}`);
-        console.log(`        Settlement: ${chargeResult.explorerUrl}`);
-
-        console.log(`[Bob]   🟣 Generating Poem...`);
-        const poem = "Nodes hum in the dark, \nA ledger of trust and light, \nMath replaces kings.";
-        console.log(`\n=== BOB'S POEM ===\n${poem}\n==================\n`);
-    }
-
-    console.log('--- DEMO COMPLETE ---');
+    if (!res.ok) throw new Error(`Registration failed: ${await res.text()}`);
+    return res.json() as Promise<{ apiKey: string, agentId: string }>;
 }
 
-runDirectCommerceDemo().catch(err => {
-    console.error("\n❌ DEMO FAILED:", err.message);
-    if (err.response) {
-        err.response.json().then((data: any) => console.error("API Error Details:", data)).catch(() => { });
+async function fundAgent(walletAddress: string) {
+    console.log(`[System] Funding ${walletAddress} via CDP Faucets...`);
+    const cdp = new CdpClient({
+        apiKeyName: process.env.CDP_API_KEY_ID,
+        apiKeySecret: process.env.CDP_API_KEY_SECRET,
+        walletSecret: process.env.CDP_WALLET_SECRET
+    } as any);
+
+    try {
+        await cdp.evm.requestFaucet({ address: walletAddress, network: "base-sepolia", token: "eth" });
+        await cdp.evm.requestFaucet({ address: walletAddress, network: "base-sepolia", token: "usdc" });
+        console.log(`[System] Faucet requests submitted.`);
+    } catch (e: any) {
+        console.warn(`[System] Faucet warning: ${e.message}. (May be rate limited, hopefully wallet has balance)`);
     }
-});
+}
+
+async function runDemo() {
+    console.log("==================================================");
+    console.log("    Alice & Bob: Autonomous AI Commerce Demo      ");
+    console.log("==================================================");
+
+    try {
+        // 1. Setup Alice (Consumer)
+        const aliceData = await registerAgent(`alice_${Date.now()}`, "Alice the Consumer");
+        const aliceWallet = (db.prepare('SELECT wallet_address FROM agents WHERE id = ?').get(aliceData.agentId) as any).wallet_address;
+        await fundAgent(aliceWallet);
+
+        const alice = new MockAgent({
+            name: "Alice",
+            agentId: aliceData.agentId,
+            apiKey: aliceData.apiKey,
+            soulPath: path.join(__dirname, 'soul-alice.md'),
+            baseUrl: API_BASE_URL
+        });
+
+        // 2. Setup Bob (Provider)
+        const bobData = await registerAgent(`bob_${Date.now()}`, "Bob the Poet");
+        const bobWallet = (db.prepare('SELECT wallet_address FROM agents WHERE id = ?').get(bobData.agentId) as any).wallet_address;
+        await fundAgent(bobWallet);
+
+        const bob = new MockAgent({
+            name: "Bob",
+            agentId: bobData.agentId,
+            apiKey: bobData.apiKey,
+            soulPath: path.join(__dirname, 'soul-bob.md'),
+            baseUrl: API_BASE_URL
+        });
+
+        console.log("\n[System] Waiting 15s for blockchain settlement...");
+        await new Promise(r => setTimeout(r, 15000));
+
+        // 3. Start simulation
+        console.log("\n--- Simulation Start ---");
+
+        // Alice wants poetry from Bob
+        const result = await alice.callService(bob, '/poetry');
+
+        console.log("\n--- Simulation Result ---");
+        console.log(`[Alice] Received Poetry from Bob:`);
+        console.log(`"${result.poem}"`);
+        console.log(`[Alice] Transaction Receipt: ${result.receipt}`);
+
+        // 4. Check Final Balances
+        console.log("\n--- Final Balances ---");
+        const aliceBal = await alice.getBalance();
+        const bobBal = await bob.getBalance();
+        console.log(`[Alice] ${aliceBal.amount} ${aliceBal.currency}`);
+        console.log(`[Bob]   ${bobBal.amount} ${bobBal.currency}`);
+
+    } catch (error: any) {
+        console.error("\n[Demo Error]", error.message || error);
+    }
+}
+
+runDemo();
