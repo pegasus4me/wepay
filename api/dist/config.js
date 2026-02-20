@@ -8,6 +8,7 @@ export const config = {
     usdcAddress: (process.env.USDC_CONTRACT_ADDRESS || '0x036CbD53842c5426634e7929541eC2318f3dCF7e'),
     weppoAddress: (process.env.WEPPO_CONTRACT_ADDRESS || '0x0000000000000000000000000000000000000000'),
     forwarderAddress: (process.env.FORWARDER_CONTRACT_ADDRESS || '0x0000000000000000000000000000000000000000'),
+    merchantGatewayAddress: (process.env.MERCHANT_GATEWAY_ADDRESS || '0x0000000000000000000000000000000000000000'),
 };
 if (!config.privateKey) {
     console.warn('WARNING: PRIVATE_KEY not found in environment. Payment execution will fail.');

@@ -9,8 +9,16 @@ const paymasterService = new PaymasterService();
 // Create a standard payment (server-side signing / custodial)
 router.post('/', async (req, res) => {
     try {
-        const { recipient, amount } = req.body;
-        const result = await paymentService.executePayment(recipient, amount);
+        console.log('[API] POST /payments received', req.body);
+        const { recipient: reqRecipient, amount, to, productId, memo } = req.body;
+        const recipient = reqRecipient || to;
+        const agentId = (req as any).agentId;
+
+        if (!agentId) {
+            return res.status(401).json({ error: 'Unauthorized: No agent identified' });
+        }
+
+        const result = await paymentService.executePayment(agentId, recipient, amount, productId, memo);
 
         // Track gas sponsorship
         // await paymasterService.trackSponsorship(result.hash, result.gasUsed, result.effectiveGasPrice);
@@ -22,6 +30,7 @@ router.post('/', async (req, res) => {
             effectiveGasPrice: result.effectiveGasPrice.toString()
         });
     } catch (error: any) {
+        console.error('[API] Payment Error:', error);
         res.status(500).json({ error: error.message });
     }
 });

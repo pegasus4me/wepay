@@ -7,11 +7,15 @@ export default function About() {
                 {/* Hero Section */}
                 <section className="text-center space-y-6">
                     <h1 className="text-5xl md:text-6xl font-medium tracking-tight">
-                        Programmable Settlement for <span className="text-neutral-400">Autonomous Agents</span>
+                        Monetize Any <span className="text-neutral-400">Agent Endpoint</span> in Minutes
                     </h1>
                     <p className="text-xl text-neutral-500 max-w-2xl mx-auto leading-relaxed">
-                        Deterministic USDC settlement for Agent-to-Agent transactions.
-                        Built on Base. Gasless. Machine-native. Compatible with x402 payment intents.
+                        Deploy an agent, set pricing, get paid — no payment infrastructure to build.
+                        <br />
+                        <span className="text-base opacity-80 mt-2 block">
+                            Deterministic USDC settlement for Agent-to-Agent transactions.
+                            Built on Base. Gasless. Machine-native. Compatible with x402 payment intents.
+                        </span>
                     </p>
                 </section>
 
@@ -38,10 +42,10 @@ export default function About() {
                         </ul>
                     </div>
                     <div className="bg-neutral-900 p-8 rounded-2xl border border-neutral-800">
-                        <h3 className="text-lg font-medium mb-4 text-neutral-200">The Core Problem</h3>
-                        <p className="text-neutral-500 mb-6">Today, agents can call APIs but cannot safely charge each other. Payments are human-oriented (Stripe, dashboards) and crypto wallets are not machine-friendly.</p>
+                        <h3 className="text-lg font-medium mb-4 text-neutral-200">The Deployment Gap</h3>
+                        <p className="text-neutral-500 mb-6">x402 handles the payment handshake. But there's no platform that makes it easy to ship. Developers spend weeks building payment infra instead of agents.</p>
                         <div className="p-4 bg-red-900/5 rounded-lg">
-                            <p className="text-red-400 text-sm">There is no native settlement layer designed for autonomous software agents.</p>
+                            <p className="text-red-400 text-sm">No native settlement layer exists for autonomous software agents.</p>
                         </div>
                     </div>
                 </section>
@@ -55,8 +59,8 @@ export default function About() {
                             <p className="text-slate-400">On-chain escrow accounts. Each agent has a USDC balance and programmable spending state.</p>
                         </div>
                         <div className="p-6 bg-stone-800 rounded-xl hover:bg-stone-700 transition-colors">
-                            <h3 className="text-xl font-medium mb-2 text-stone-200">2. Programmable Charging</h3>
-                            <p className="text-stone-400">Pre-authorize spending, set max budgets, and execute per-call microcharges safely.</p>
+                            <h3 className="text-xl font-medium mb-2 text-stone-200">2. Auto-Config via SKILL.md</h3>
+                            <p className="text-stone-400">Auto-generates settlement rules from your SKILL.md. Define pricing and capabilities in code, deploy instantly.</p>
                         </div>
                         <div className="p-6 bg-indigo-900 rounded-xl hover:bg-indigo-800 transition-colors">
                             <h3 className="text-xl font-medium mb-2 text-indigo-200">3. Gas Abstraction</h3>
@@ -135,9 +139,14 @@ export default function About() {
                         </div>
                     </div>
                 </section>
-                <p className="text-center font-light text-neutral-400 max-w-2xl mx-auto leading-relaxed relative z-10">
-                    Weppo turns agent requests into paid, deterministic USDC settlement—so agents can monetize every interaction
-                </p>
+                <div className="text-center space-y-6 relative z-10">
+                    <p className="font-light text-neutral-400 max-w-2xl mx-auto leading-relaxed">
+                        Weppo turns agent requests into paid, deterministic USDC settlement—so agents can monetize every interaction.
+                    </p>
+                    <Link href="/" className="inline-block bg-white text-black px-8 py-3 rounded-full font-medium hover:bg-neutral-200 transition-colors">
+                        Join Waitlist
+                    </Link>
+                </div>
                 {/* Roadmap Section */}
                 <section>
                     <h2 className="text-3xl font-light mb-8">Roadmap</h2>

@@ -1,0 +1,168 @@
+
+> weppo@1.0.0 dev:api
+> npm run dev --workspace=api
+
+
+> api@0.1.0 dev
+> tsx watch src/server.ts
+
+
+🚀 Weppo API — The Consumer Abstraction Layer
+Server running on http://localhost:3111
+  
+[API] POST /payments received {
+  to: '0xEF822A6b8960041C069800F6dd9D4E370f2C9047',
+  amount: 5,
+  productId: '101',
+  memo: 'Unstructured web search access for sub-agent swarm #88'
+}
+[PaymentService] Approving Gateway 0xEF822A6b8960041C069800F6dd9D4E370f2C9047 for 5 USDC...
+[PaymentService] Executing buy() on Gateway for Product ID 101...
+[API] Payment Error: ContractFunctionExecutionError: The contract function "buy" reverted with the following reason:
+ERC20: transfer amount exceeds balance
+
+Contract Call:
+  address:   0xEF822A6b8960041C069800F6dd9D4E370f2C9047
+  function:  buy(uint256 _productId, string _memo)
+  args:         (101, Unstructured web search access for sub-agent swarm #88)
+  sender:    0xE5261f469bAc513C0a0575A3b686847F48Bc6687
+
+Docs: https://viem.sh/docs/contract/writeContract
+Version: viem@2.46.2
+    at getContractError (/Users/user/Desktop/research/wepay/node_modules/viem/utils/errors/getContractError.ts:81:10)
+    at writeContract.internal (/Users/user/Desktop/research/wepay/node_modules/viem/actions/wallet/writeContract.ts:241:13)
+    ... 2 lines matching cause stack trace ...
+    at async <anonymous> (/Users/user/Desktop/research/wepay/api/src/routes/payments.ts:15:24) {
+  cause: ContractFunctionRevertedError: The contract function "buy" reverted with the following reason:
+  ERC20: transfer amount exceeds balance
+  
+  Version: viem@2.46.2
+      at <anonymous> (/Users/user/Desktop/research/wepay/node_modules/viem/utils/errors/getContractError.ts:68:14)
+      at getContractError (/Users/user/Desktop/research/wepay/node_modules/viem/utils/errors/getContractError.ts:79:5)
+      at writeContract.internal (/Users/user/Desktop/research/wepay/node_modules/viem/actions/wallet/writeContract.ts:241:13)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async PaymentService.executePurchase (/Users/user/Desktop/research/wepay/api/src/services/payment.ts:154:22)
+      at async <anonymous> (/Users/user/Desktop/research/wepay/api/src/routes/payments.ts:15:24) {
+    details: undefined,
+    docsPath: undefined,
+    metaMessages: undefined,
+    shortMessage: 'The contract function "buy" reverted with the following reason:\n' +
+      'ERC20: transfer amount exceeds balance',
+    version: '2.46.2',
+    data: { abiItem: [Object], args: [Array], errorName: 'Error' },
+    raw: '0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000002645524332303a207472616e7366657220616d6f756e7420657863656564732062616c616e63650000000000000000000000000000000000000000000000000000',
+    reason: 'ERC20: transfer amount exceeds balance',
+    signature: undefined
+  },
+  details: undefined,
+  docsPath: '/docs/contract/writeContract',
+  metaMessages: [
+    'Contract Call:',
+    '  address:   0xEF822A6b8960041C069800F6dd9D4E370f2C9047\n' +
+      '  function:  buy(uint256 _productId, string _memo)\n' +
+      '  args:         (101, Unstructured web search access for sub-agent swarm #88)\n' +
+      '  sender:    0xE5261f469bAc513C0a0575A3b686847F48Bc6687'
+  ],
+  shortMessage: 'The contract function "buy" reverted with the following reason:\n' +
+    'ERC20: transfer amount exceeds balance',
+  version: '2.46.2',
+  abi: [
+    {
+      name: 'buy',
+      type: 'function',
+      stateMutability: 'nonpayable',
+      inputs: [Array],
+      outputs: []
+    }
+  ],
+  args: [ 101n, 'Unstructured web search access for sub-agent swarm #88' ],
+  contractAddress: '0xEF822A6b8960041C069800F6dd9D4E370f2C9047',
+  formattedArgs: undefined,
+  functionName: 'buy',
+  sender: '0xE5261f469bAc513C0a0575A3b686847F48Bc6687'
+}
+[API] POST /payments received {
+  to: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+  amount: 0.01,
+  currency: 'USDC',
+  memo: 'Payment for web search subtask #402'
+}
+[API] POST /payments received {
+  to: '0xEF822A6b8960041C069800F6dd9D4E370f2C9047',
+  amount: 5,
+  productId: '101',
+  memo: 'Unstructured web search access for sub-agent swarm #88'
+}
+[PaymentService] Approving Gateway 0xEF822A6b8960041C069800F6dd9D4E370f2C9047 for 5 USDC...
+[PaymentService] Executing buy() on Gateway for Product ID 101...
+[API] Payment Error: ContractFunctionExecutionError: The contract function "buy" reverted with the following reason:
+ERC20: transfer amount exceeds balance
+
+Contract Call:
+  address:   0xEF822A6b8960041C069800F6dd9D4E370f2C9047
+  function:  buy(uint256 _productId, string _memo)
+  args:         (101, Unstructured web search access for sub-agent swarm #88)
+  sender:    0xE5261f469bAc513C0a0575A3b686847F48Bc6687
+
+Docs: https://viem.sh/docs/contract/writeContract
+Version: viem@2.46.2
+    at getContractError (/Users/user/Desktop/research/wepay/node_modules/viem/utils/errors/getContractError.ts:81:10)
+    at writeContract.internal (/Users/user/Desktop/research/wepay/node_modules/viem/actions/wallet/writeContract.ts:241:13)
+    ... 2 lines matching cause stack trace ...
+    at async <anonymous> (/Users/user/Desktop/research/wepay/api/src/routes/payments.ts:15:24) {
+  cause: ContractFunctionRevertedError: The contract function "buy" reverted with the following reason:
+  ERC20: transfer amount exceeds balance
+  
+  Version: viem@2.46.2
+      at <anonymous> (/Users/user/Desktop/research/wepay/node_modules/viem/utils/errors/getContractError.ts:68:14)
+      at getContractError (/Users/user/Desktop/research/wepay/node_modules/viem/utils/errors/getContractError.ts:79:5)
+      at writeContract.internal (/Users/user/Desktop/research/wepay/node_modules/viem/actions/wallet/writeContract.ts:241:13)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async PaymentService.executePurchase (/Users/user/Desktop/research/wepay/api/src/services/payment.ts:154:22)
+      at async <anonymous> (/Users/user/Desktop/research/wepay/api/src/routes/payments.ts:15:24) {
+    details: undefined,
+    docsPath: undefined,
+    metaMessages: undefined,
+    shortMessage: 'The contract function "buy" reverted with the following reason:\n' +
+      'ERC20: transfer amount exceeds balance',
+    version: '2.46.2',
+    data: { abiItem: [Object], args: [Array], errorName: 'Error' },
+    raw: '0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000002645524332303a207472616e7366657220616d6f756e7420657863656564732062616c616e63650000000000000000000000000000000000000000000000000000',
+    reason: 'ERC20: transfer amount exceeds balance',
+    signature: undefined
+  },
+  details: undefined,
+  docsPath: '/docs/contract/writeContract',
+  metaMessages: [
+    'Contract Call:',
+    '  address:   0xEF822A6b8960041C069800F6dd9D4E370f2C9047\n' +
+      '  function:  buy(uint256 _productId, string _memo)\n' +
+      '  args:         (101, Unstructured web search access for sub-agent swarm #88)\n' +
+      '  sender:    0xE5261f469bAc513C0a0575A3b686847F48Bc6687'
+  ],
+  shortMessage: 'The contract function "buy" reverted with the following reason:\n' +
+    'ERC20: transfer amount exceeds balance',
+  version: '2.46.2',
+  abi: [
+    {
+      name: 'buy',
+      type: 'function',
+      stateMutability: 'nonpayable',
+      inputs: [Array],
+      outputs: []
+    }
+  ],
+  args: [ 101n, 'Unstructured web search access for sub-agent swarm #88' ],
+  contractAddress: '0xEF822A6b8960041C069800F6dd9D4E370f2C9047',
+  formattedArgs: undefined,
+  functionName: 'buy',
+  sender: '0xE5261f469bAc513C0a0575A3b686847F48Bc6687'
+}
+[API] POST /payments received {
+  to: '0xEF822A6b8960041C069800F6dd9D4E370f2C9047',
+  amount: 0.01,
+  productId: '102',
+  memo: 'Unstructured web search access for sub-agent swarm #88'
+}
+[PaymentService] Approving Gateway 0xEF822A6b8960041C069800F6dd9D4E370f2C9047 for 0.01 USDC...
+[PaymentService] Executing buy() on Gateway for Product ID 102...

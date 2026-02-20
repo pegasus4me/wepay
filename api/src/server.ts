@@ -32,8 +32,8 @@ app.use((req, res, next) => {
         return res.status(401).json({ message: 'Unauthorized: Invalid API Key' });
     }
 
-    // Attach agentId to request for downstream use (if needed)
-    // (req as any).agentId = agentId;
+    // Attach agentId to request for downstream use
+    (req as any).agentId = agentId;
 
     next();
 });

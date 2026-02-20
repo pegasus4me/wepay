@@ -6,4 +6,5 @@ export declare const config: {
     usdcAddress: `0x${string}`;
     weppoAddress: `0x${string}`;
     forwarderAddress: `0x${string}`;
+    merchantGatewayAddress: `0x${string}`;
 };

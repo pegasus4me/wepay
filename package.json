@@ -24,6 +24,7 @@
   },
   "homepage": "https://github.com/pegasus4me/wepay#readme",
   "dependencies": {
+    "awal": "^2.0.3",
     "better-sqlite3": "^12.6.2",
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",

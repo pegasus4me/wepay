@@ -9,6 +9,8 @@
         "test": "vitest run"
     },
     "dependencies": {
+        "@coinbase/cdp-sdk": "^1.44.1",
+        "@weppo/sdk": "^0.1.0",
         "better-sqlite3": "^12.6.2",
         "cors": "^2.8.5",
         "dotenv": "^16.4.1",

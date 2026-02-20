@@ -4,7 +4,6 @@ import { config } from './config.js';
 import paymentRoutes from './routes/payments.js';
 import walletRoutes from './routes/wallets.js';
 import marketRoutes from './routes/market.js';
-import invoiceRoutes from './routes/invoices.js';
 import authRoutes from './routes/auth.js';
 import { AuthService } from './services/auth.js';
 const app = express();
@@ -33,11 +32,12 @@ app.use((req, res, next) => {
 app.get('/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
+import paymentIntentRoutes from './routes/payment_intents.js';
 app.use('/auth', authRoutes);
 app.use('/v1/payments', paymentRoutes);
 app.use('/v1/wallets', walletRoutes);
 app.use('/v1/market', marketRoutes);
-app.use('/v1/invoices', invoiceRoutes);
+app.use('/v1/payment-intents', paymentIntentRoutes);
 app.listen(config.port, () => {
     console.log(`
 🚀 Weppo API — The Consumer Abstraction Layer

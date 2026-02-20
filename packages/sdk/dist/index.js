@@ -34,12 +34,8 @@ class Weppo {
     /**
      * Payments: Direct P2P transfers
      */
-    async pay(recipient, amount) {
-        return this.client.createPayment({
-            to: recipient,
-            amount,
-            currency: 'USDC' // Default for now
-        });
+    async pay(params) {
+        return this.client.createPayment(params);
     }
     async preAuthorize(spender, maxAmount) {
         return this.client.preAuthorize({ spender, maxAmount });

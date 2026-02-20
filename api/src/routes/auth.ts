@@ -7,7 +7,7 @@ const authService = new AuthService();
 // Generate a new API Key for an agent
 // POST /auth/keys
 // Body: { agentId: string, label?: string }
-router.post('/keys', (req, res) => {
+router.post('/keys', async (req, res) => {
     try {
         const { agentId, label } = req.body;
 
@@ -18,7 +18,7 @@ router.post('/keys', (req, res) => {
         // TODO: In a real app, we would verify the requester owns the agentId.
         // For now (POC), we allow key generation freely.
 
-        const apiKey = authService.createKeyForAgent(agentId, label);
+        const apiKey = await authService.createKeyForAgent(agentId, label);
 
         res.json({ apiKey, agentId, label });
     } catch (error: any) {

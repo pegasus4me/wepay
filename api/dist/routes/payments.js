@@ -7,8 +7,9 @@ const paymasterService = new PaymasterService();
 // Create a standard payment (server-side signing / custodial)
 router.post('/', async (req, res) => {
     try {
-        const { recipient, amount } = req.body;
-        const result = await paymentService.executePayment(recipient, amount);
+        const { recipient: reqRecipient, amount, to, productId, memo } = req.body;
+        const recipient = reqRecipient || to;
+        const result = await paymentService.executePayment(recipient, amount, productId, memo);
         // Track gas sponsorship
         // await paymasterService.trackSponsorship(result.hash, result.gasUsed, result.effectiveGasPrice);
         res.json({

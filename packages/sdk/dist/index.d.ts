@@ -1,4 +1,4 @@
-import { WeppoConfig, PaymentResponse, BalanceResponse, Service, CreateServiceRequest, PaymentIntent, CreatePaymentIntentRequest } from './types.js';
+import { WeppoConfig, PaymentRequest, PaymentResponse, BalanceResponse, Service, CreateServiceRequest, PaymentIntent, CreatePaymentIntentRequest } from './types.js';
 export * from './types.js';
 export * from './errors.js';
 export * from './x402.js';
@@ -11,7 +11,7 @@ export declare class Weppo {
     /**
      * Payments: Direct P2P transfers
      */
-    pay(recipient: string, amount: number): Promise<PaymentResponse>;
+    pay(params: PaymentRequest): Promise<PaymentResponse>;
     preAuthorize(spender: string, maxAmount: number): Promise<{
         txHash: string;
         status: string;

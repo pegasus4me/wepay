@@ -18,14 +18,14 @@ async function runX402Demo() {
     });
 
     try {
-        const gatewayAddress = '0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc'; // Example Gateway Contract
-        const productId = 'prod_search_unlimited_24h';
+        const gatewayAddress = process.env.MERCHANT_GATEWAY_ADDRESS || '0xEF822A6b8960041C069800F6dd9D4E370f2C9047';
+        const productId = '102'; // Numeric ID for contract compatibility
 
         // 1. Discovery (Simulated)
         console.log(`\n[Agent] Programmatically discovered product: ${productId} at gateway ${gatewayAddress}`);
 
-        // 2. Intent: "I need unlimited search for my task. Contract says it's 5.00 USDC."
-        const paymentAmount = 5.00;
+        // 2. Intent: "I need simple search for my task. Contract says it's 0.01 USDC."
+        const paymentAmount = 0.01;
 
         console.log(`[Agent] Initiating x402 purchase for ${paymentAmount} USDC...`);
 

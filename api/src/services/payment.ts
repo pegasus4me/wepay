@@ -2,6 +2,17 @@ import { createPublicClient, createWalletClient, http, parseUnits, encodeFunctio
 import { privateKeyToAccount } from 'viem/accounts';
 import { baseSepolia } from 'viem/chains';
 import { config } from '../config.js';
+import { CdpClient } from '@coinbase/cdp-sdk';
+import db from '../db.js';
+
+let cdp: CdpClient | null = null;
+if (config.cdpApiKeyId && config.cdpApiKeySecret && config.cdpWalletSecret) {
+    cdp = new CdpClient({
+        apiKeyName: config.cdpApiKeyId,
+        apiKeySecret: config.cdpApiKeySecret,
+        walletSecret: config.cdpWalletSecret
+    } as any);
+}
 
 const USDC_ABI = [
     {
@@ -47,6 +58,19 @@ const WEPPO_ABI = [
     },
 ] as const;
 
+const MERCHANT_GATEWAY_ABI = [
+    {
+        name: 'buy',
+        type: 'function',
+        stateMutability: 'nonpayable',
+        inputs: [
+            { name: '_productId', type: 'uint256' },
+            { name: '_memo', type: 'string' }
+        ],
+        outputs: [],
+    },
+] as const;
+
 export class PaymentService {
     private account = config.privateKey ? privateKeyToAccount(config.privateKey) : null;
 
@@ -61,8 +85,20 @@ export class PaymentService {
         transport: http(config.rpcUrl),
     });
 
-    async executePayment(recipient: string, amount: number): Promise<{ hash: string; gasUsed: bigint; effectiveGasPrice: bigint }> {
-        if (!this.account) throw new Error('Private key not configured');
+    async executePayment(agentId: string, recipient: string, amount: number, productId?: string, memo?: string): Promise<{ hash: string; gasUsed: bigint; effectiveGasPrice: bigint }> {
+        if (!cdp) throw new Error('CDP Client not configured');
+
+        // Look up the agent's CDP Server Wallet address
+        const agentRow = db.prepare('SELECT wallet_address FROM agents WHERE id = ?').get(agentId) as { wallet_address: string } | undefined;
+        if (!agentRow || !agentRow.wallet_address) {
+            throw new Error(`Wallet address not found for agent ${agentId}`);
+        }
+        const walletAddress = agentRow.wallet_address;
+
+        // Route to x402 Purchase if productId is present
+        if (productId) {
+            return this.executePurchase(agentId, walletAddress, recipient, productId, amount, memo || '');
+        }
 
         const decimals = await this.publicClient.readContract({
             address: config.usdcAddress,
@@ -72,14 +108,97 @@ export class PaymentService {
 
         const amountInUnits = parseUnits(amount.toString(), decimals);
 
-        const hash = await this.walletClient.writeContract({
-            address: config.usdcAddress,
+        const data = encodeFunctionData({
             abi: USDC_ABI,
             functionName: 'transfer',
-            args: [recipient as `0x${string}`, amountInUnits],
+            args: [recipient as `0x${string}`, amountInUnits]
         });
 
+        console.log(`[PaymentService] Executing USDC transfer via CDP from ${walletAddress}...`);
+        const transactionResult = await cdp.evm.sendTransaction({
+            address: walletAddress,
+            transaction: {
+                to: config.usdcAddress,
+                data: data,
+                value: BigInt(0),
+            },
+            network: "base-sepolia",
+        });
+
+        const hash = transactionResult.transactionHash as `0x${string}`;
+
         // Wait for confirmation to capture exact gas usage for paymaster
+        const receipt = await this.publicClient.waitForTransactionReceipt({ hash });
+
+        return {
+            hash,
+            gasUsed: receipt.gasUsed,
+            effectiveGasPrice: receipt.effectiveGasPrice
+        };
+    }
+
+    async executePurchase(agentId: string, walletAddress: string, gatewayAddress: string, productId: string, amount: number, memo: string): Promise<{ hash: string; gasUsed: bigint; effectiveGasPrice: bigint }> {
+        if (!cdp) throw new Error('CDP Client not configured');
+        // 1. Approve Gateway to spend USDC
+        const decimals = await this.publicClient.readContract({
+            address: config.usdcAddress,
+            abi: USDC_ABI,
+            functionName: 'decimals',
+        });
+        const amountInUnits = parseUnits(amount.toString(), decimals);
+
+        console.log(`[PaymentService] Approving Gateway ${gatewayAddress} for ${amount} USDC via CDP...`);
+        const approveData = encodeFunctionData({
+            abi: [{
+                name: 'approve',
+                type: 'function',
+                stateMutability: 'nonpayable',
+                inputs: [{ name: 'spender', type: 'address' }, { name: 'amount', type: 'uint256' }],
+                outputs: [{ name: 'success', type: 'bool' }]
+            }],
+            functionName: 'approve',
+            args: [gatewayAddress as `0x${string}`, amountInUnits],
+        });
+
+        const approveTx = await cdp.evm.sendTransaction({
+            address: walletAddress,
+            transaction: {
+                to: config.usdcAddress,
+                data: approveData,
+                value: BigInt(0),
+            },
+            network: "base-sepolia",
+        });
+        await this.publicClient.waitForTransactionReceipt({ hash: approveTx.transactionHash as `0x${string}` });
+
+        // 2. Call buy() on Gateway
+        let productIdBigInt: bigint;
+        try {
+            productIdBigInt = BigInt(productId);
+        } catch {
+            productIdBigInt = BigInt(0);
+            console.warn(`[PaymentService] Warning: Could not parse productId '${productId}' as BigInt. Using 0.`);
+        }
+
+        console.log(`[PaymentService] Executing buy() on Gateway for Product ID ${productIdBigInt} via CDP...`);
+        const buyData = encodeFunctionData({
+            abi: MERCHANT_GATEWAY_ABI,
+            functionName: 'buy',
+            args: [productIdBigInt, memo],
+        });
+
+        const buyTx = await cdp.evm.sendTransaction({
+            address: walletAddress,
+            transaction: {
+                to: gatewayAddress,
+                data: buyData,
+                value: BigInt(0),
+            },
+            network: "base-sepolia",
+        });
+
+        const hash = buyTx.transactionHash as `0x${string}`;
+
         const receipt = await this.publicClient.waitForTransactionReceipt({ hash });
 
         return {

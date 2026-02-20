@@ -44,6 +44,18 @@ const WEPPO_ABI = [
         outputs: [],
     },
 ];
+const MERCHANT_GATEWAY_ABI = [
+    {
+        name: 'buy',
+        type: 'function',
+        stateMutability: 'nonpayable',
+        inputs: [
+            { name: '_productId', type: 'uint256' },
+            { name: '_memo', type: 'string' }
+        ],
+        outputs: [],
+    },
+];
 export class PaymentService {
     account = config.privateKey ? privateKeyToAccount(config.privateKey) : null;
     publicClient = createPublicClient({
@@ -55,9 +67,13 @@ export class PaymentService {
         chain: baseSepolia,
         transport: http(config.rpcUrl),
     });
-    async executePayment(recipient, amount) {
+    async executePayment(recipient, amount, productId, memo) {
         if (!this.account)
             throw new Error('Private key not configured');
+        // Route to x402 Purchase if productId is present
+        if (productId) {
+            return this.executePurchase(recipient, productId, amount, memo || '');
+        }
         const decimals = await this.publicClient.readContract({
             address: config.usdcAddress,
             abi: USDC_ABI,
@@ -71,6 +87,61 @@ export class PaymentService {
             args: [recipient, amountInUnits],
         });
         // Wait for confirmation to capture exact gas usage for paymaster
+        const receipt = await this.publicClient.waitForTransactionReceipt({ hash });
+        return {
+            hash,
+            gasUsed: receipt.gasUsed,
+            effectiveGasPrice: receipt.effectiveGasPrice
+        };
+    }
+    async executePurchase(gatewayAddress, productId, amount, memo) {
+        // 1. Approve Gateway to spend USDC
+        // Note: Ideally we check allowance first, but for POC we just approve exact amount (or max)
+        const decimals = await this.publicClient.readContract({
+            address: config.usdcAddress,
+            abi: USDC_ABI,
+            functionName: 'decimals',
+        });
+        const amountInUnits = parseUnits(amount.toString(), decimals);
+        console.log(`[PaymentService] Approving Gateway ${gatewayAddress} for ${amount} USDC...`);
+        const approveHash = await this.walletClient.writeContract({
+            address: config.usdcAddress,
+            abi: [{
+                    name: 'approve',
+                    type: 'function',
+                    stateMutability: 'nonpayable',
+                    inputs: [{ name: 'spender', type: 'address' }, { name: 'amount', type: 'uint256' }],
+                    outputs: [{ name: 'success', type: 'bool' }]
+                }],
+            functionName: 'approve',
+            args: [gatewayAddress, amountInUnits],
+        });
+        await this.publicClient.waitForTransactionReceipt({ hash: approveHash });
+        // 2. Call buy() on Gateway
+        // Only numeric product IDs supported by contract for now (uint256)
+        // If productId is a string (e.g. 'prod_123'), we need to hash it or parse it.
+        // For this demo, let's assume we pass a numeric ID as string, OR we hash it if it looks like a string.
+        // Actually, MerchantGateway.sol uses uint256. Let's try to parse, else hash.
+        let productIdBigInt;
+        try {
+            productIdBigInt = BigInt(productId);
+        }
+        catch {
+            // fast hash
+            // In real app, we might need a registry mapping. For now, simple hash or error.
+            // Let's fallback to 0 or throw if not numeric, as the contract expects uint256.
+            // Or use a hash.
+            // Simple consistent hash for demo strings:
+            productIdBigInt = BigInt(0); // Placeholder if parsing fails
+            console.warn(`[PaymentService] Warning: Could not parse productId '${productId}' as BigInt. Using 0.`);
+        }
+        console.log(`[PaymentService] Executing buy() on Gateway for Product ID ${productIdBigInt}...`);
+        const hash = await this.walletClient.writeContract({
+            address: gatewayAddress,
+            abi: MERCHANT_GATEWAY_ABI,
+            functionName: 'buy',
+            args: [productIdBigInt, memo],
+        });
         const receipt = await this.publicClient.waitForTransactionReceipt({ hash });
         return {
             hash,

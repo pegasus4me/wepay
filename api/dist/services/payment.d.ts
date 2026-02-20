@@ -2,7 +2,12 @@ export declare class PaymentService {
     private account;
     private publicClient;
     private walletClient;
-    executePayment(recipient: string, amount: number): Promise<{
+    executePayment(recipient: string, amount: number, productId?: string, memo?: string): Promise<{
+        hash: string;
+        gasUsed: bigint;
+        effectiveGasPrice: bigint;
+    }>;
+    executePurchase(gatewayAddress: string, productId: string, amount: number, memo: string): Promise<{
         hash: string;
         gasUsed: bigint;
         effectiveGasPrice: bigint;

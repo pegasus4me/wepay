@@ -38,7 +38,7 @@ db.exec(`
     FOREIGN KEY(provider_agent_id) REFERENCES agents(id)
   );
 
-  CREATE TABLE IF NOT EXISTS invoices (
+  CREATE TABLE IF NOT EXISTS payment_intents (
     id TEXT PRIMARY KEY,
     agent_id TEXT NOT NULL,
     amount REAL NOT NULL,

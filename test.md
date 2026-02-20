@@ -1,0 +1,5 @@
+{"apiKey":"weppo_key_f829ec38995ec82199b5ef120d73c71727bfbb9bda80b520","agentId":"demo_agent_01","label":"Getting Started Demo"}%   
+
+Forwarder: 0xc4Bc93234b78B63F63A72F58E84B45311827d406
+Weppo: 0x82D9828fdCAD4082721932201d10AF4446bBd0f9
+MerchantGateway: 0xEF822A6b8960041C069800F6dd9D4E370f2C9047
