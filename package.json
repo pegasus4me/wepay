@@ -11,7 +11,8 @@
   "scripts": {
     "dev:api": "npm run dev --workspace=api",
     "build": "npm run build --workspace=packages/sdk && npm run build --workspace=api",
-    "demo": "npx tsx demo/agent-pay.ts"
+    "demo": "npx tsx demo/agent-pay.ts",
+    "demo:commerce": "npx tsx demo/agent-commerce/index.ts"
   },
   "repository": {
     "type": "git",
