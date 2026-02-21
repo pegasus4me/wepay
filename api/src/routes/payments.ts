@@ -44,10 +44,30 @@ router.get('/:id', async (req, res) => {
 
 // --- Custodial Endpoints (Deprecated / Transitional) ---
 
+router.post('/deposit', async (req, res) => {
+    try {
+        const { amount } = req.body;
+        const agentId = (req as any).agentId;
+
+        if (!agentId) {
+            return res.status(401).json({ error: 'Unauthorized: No agent identified' });
+        }
+
+        const result = await paymentService.executeDeposit(agentId, amount);
+        res.json({ status: 'confirmed', txHash: result.hash });
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 router.post('/pre-authorize', async (req, res) => {
     try {
         const { spender, maxAmount } = req.body;
-        const result = await paymentService.executePreAuth(spender, maxAmount);
+        const callerAgentId = (req as any).agentId; // Alice's agentId — she is pre-authorizing
+        if (!callerAgentId) {
+            return res.status(401).json({ error: 'Unauthorized: No agent identified' });
+        }
+        const result = await paymentService.executePreAuth(callerAgentId, spender, maxAmount);
         res.json({
             id: result.hash,
             status: 'confirmed',
@@ -61,7 +81,11 @@ router.post('/pre-authorize', async (req, res) => {
 router.post('/charge', async (req, res) => {
     try {
         const { from, amount, memo } = req.body;
-        const result = await paymentService.executeCharge(from, amount, memo);
+        const callerAgentId = (req as any).agentId; // Bob's agentId — he must be the caller
+        if (!callerAgentId) {
+            return res.status(401).json({ error: 'Unauthorized: No agent identified' });
+        }
+        const result = await paymentService.executeCharge(callerAgentId, from, amount, memo);
         res.json({
             id: result.hash,
             status: 'confirmed',
