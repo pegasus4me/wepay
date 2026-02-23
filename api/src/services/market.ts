@@ -1,4 +1,4 @@
-import db from '../db.js';
+import supabase from '../db.js';
 import crypto from 'crypto';
 
 export interface ServiceInput {
@@ -14,43 +14,44 @@ export class MarketService {
     async createService(agentId: string, data: ServiceInput) {
         const id = `srv_${crypto.randomUUID()}`;
 
-        // Check if agent exists to satisfy FK constraint
-        const agent = db.prepare('SELECT id FROM agents WHERE id = ?').get(agentId);
-        if (!agent) {
-            // For MVP/POC, we auto-create the agent record if missing
-            // In prod, this should fail or require explicit registration
-            // Use a placeholder wallet if not known
-            db.prepare('INSERT OR IGNORE INTO agents (id, wallet_address) VALUES (?, ?)').run(agentId, '0xE5261f469bAc513C0a0575A3b686847F48Bc6687');
-        }
-
-        const stmt = db.prepare(`
-            INSERT INTO agent_services (id, provider_agent_id, name, description, price, currency, endpoint_url, collateral_amount)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        `);
-
-        stmt.run(
-            id,
-            agentId,
-            data.name,
-            data.description || null,
-            data.price,
-            data.currency,
-            data.endpointUrl,
-            data.collateralAmount || 0
+        // Auto-create agent if not exist
+        await supabase.from('agents').upsert(
+            { id: agentId, wallet_address: '0xE5261f469bAc513C0a0575A3b686847F48Bc6687' },
+            { onConflict: 'id', ignoreDuplicates: true }
         );
 
+        const { error } = await supabase.from('agent_services').insert({
+            id,
+            provider_agent_id: agentId,
+            name: data.name,
+            description: data.description || null,
+            price: data.price,
+            currency: data.currency,
+            endpoint_url: data.endpointUrl,
+            collateral_amount: data.collateralAmount || 0,
+        });
+
+        if (error) throw new Error(`Failed to create service: ${error.message}`);
         return this.getService(id);
     }
 
-    getService(id: string) {
-        const row = db.prepare('SELECT * FROM agent_services WHERE id = ?').get(id) as any;
-        if (!row) return null;
-        return this.mapRow(row);
+    async getService(id: string) {
+        const { data } = await supabase
+            .from('agent_services')
+            .select('*')
+            .eq('id', id)
+            .single();
+
+        return data ? this.mapRow(data) : null;
     }
 
-    listServices() {
-        const rows = db.prepare('SELECT * FROM agent_services ORDER BY created_at DESC').all() as any[];
-        return rows.map(this.mapRow);
+    async listServices() {
+        const { data } = await supabase
+            .from('agent_services')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        return (data || []).map(this.mapRow);
     }
 
     private mapRow(row: any) {
@@ -63,7 +64,7 @@ export class MarketService {
             currency: row.currency,
             endpointUrl: row.endpoint_url,
             collateralAmount: row.collateral_amount,
-            createdAt: row.created_at
+            createdAt: row.created_at,
         };
     }
 }

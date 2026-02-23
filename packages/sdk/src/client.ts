@@ -89,7 +89,7 @@ export class WeppoClient {
     }
 
     private handleError(status: number, data: any) {
-        const message = data.message || 'An unexpected error occurred';
+        const message = data.error || data.message || 'An unexpected error occurred';
         const code = data.code;
 
         if (status === 401) throw new AuthenticationError(message);
@@ -174,6 +174,13 @@ export class WeppoClient {
         return this.request<PaymentResponse>('/payments', {
             method: 'POST',
             body: JSON.stringify(params),
+        });
+    }
+
+    async deposit(amount: number): Promise<{ txHash: string, status: string }> {
+        return this.request<{ txHash: string, status: string }>('/payments/deposit', {
+            method: 'POST',
+            body: JSON.stringify({ amount }),
         });
     }
 

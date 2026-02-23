@@ -5,22 +5,51 @@ const router = Router();
 const authService = new AuthService();
 
 // Generate a new API Key for an agent
-// POST /auth/keys
-// Body: { agentId: string, label?: string }
+// POST /auth/keys  (also aliased as POST /auth/key)
+// Body: { agentId: string, label?: string, userId?: string }
 router.post('/keys', async (req, res) => {
     try {
-        const { agentId, label } = req.body;
+        const { agentId, label, userId } = req.body;
 
         if (!agentId) {
             return res.status(400).json({ error: 'agentId is required' });
         }
 
-        // TODO: In a real app, we would verify the requester owns the agentId.
-        // For now (POC), we allow key generation freely.
+        const apiKey = await authService.createKeyForAgent(agentId, label, userId);
 
-        const apiKey = await authService.createKeyForAgent(agentId, label);
+        // Fetch the provisioned wallet address
+        const db = (await import('../db.js')).default;
+        const { data: agentRow } = await db
+            .from('agents')
+            .select('wallet_address')
+            .eq('id', agentId)
+            .maybeSingle();
 
-        res.json({ apiKey, agentId, label });
+        res.json({ apiKey, agentId, label, walletAddress: agentRow?.wallet_address || null });
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Alias for dashboard convenience
+router.post('/key', async (req, res) => {
+    try {
+        const { agentId, label, userId } = req.body;
+
+        if (!agentId) {
+            return res.status(400).json({ error: 'agentId is required' });
+        }
+
+        const apiKey = await authService.createKeyForAgent(agentId, label, userId);
+
+        const db = (await import('../db.js')).default;
+        const { data: agentRow } = await db
+            .from('agents')
+            .select('wallet_address')
+            .eq('id', agentId)
+            .maybeSingle();
+
+        res.json({ apiKey, agentId, label, walletAddress: agentRow?.wallet_address || null });
     } catch (error: any) {
         res.status(500).json({ error: error.message });
     }

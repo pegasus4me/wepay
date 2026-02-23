@@ -13,8 +13,8 @@ const authService = new AuthService();
 app.use(cors());
 app.use(express.json());
 
-// Auth middleware
-app.use((req, res, next) => {
+// Auth middleware (async — validateKey queries Supabase)
+app.use(async (req, res, next) => {
     // Skip auth for health check and auth routes
     if (req.path === '/health' || req.path.startsWith('/auth')) {
         return next();
@@ -26,15 +26,13 @@ app.use((req, res, next) => {
     }
 
     const apiKey = authHeader.split(' ')[1];
-    const agentId = authService.validateKey(apiKey);
+    const agentId = await authService.validateKey(apiKey);
 
     if (!agentId) {
         return res.status(401).json({ message: 'Unauthorized: Invalid API Key' });
     }
 
-    // Attach agentId to request for downstream use
     (req as any).agentId = agentId;
-
     next();
 });
 

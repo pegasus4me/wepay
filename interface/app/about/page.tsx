@@ -6,23 +6,18 @@ export default function About() {
             <main className="max-w-4xl mx-auto space-y-24">
                 {/* Hero Section */}
                 <section className="text-center space-y-6">
-                    <h1 className="text-5xl md:text-6xl font-medium tracking-tight">
+                    <h1 className="text-5xl md:text-6xl font-medium tracking-tight text-white">
                         Monetize Any <span className="text-neutral-400">Agent Endpoint</span> in Minutes
                     </h1>
                     <p className="text-xl text-neutral-500 max-w-2xl mx-auto leading-relaxed">
-                        Deploy an agent, set pricing, get paid — no payment infrastructure to build.
-                        <br />
-                        <span className="text-base opacity-80 mt-2 block">
-                            Deterministic USDC settlement for Agent-to-Agent transactions.
-                            Built on Base. Gasless. Machine-native. Compatible with x402 payment intents.
-                        </span>
+                       Deterministic USDC settlement for Agent-to-Agent transactions. Built on Base. Gasless. Machine-native. Compatible with x402 payment intents.
                     </p>
                 </section>
 
                 {/* Vision Section */}
                 <section className="grid md:grid-cols-2 gap-12 items-center">
                     <div className="space-y-6">
-                        <h2 className="text-3xl font-light">The Vision</h2>
+                        <h2 className="text-3xl font-light text-white">The Vision</h2>
                         <p className="text-neutral-400 leading-relaxed">
                             Autonomous agents need a way to charge other agents, pay for services, and execute microtransactions deterministically.
                         </p>
@@ -52,7 +47,7 @@ export default function About() {
 
                 {/* Solution Grid */}
                 <section>
-                    <h2 className="text-3xl font-light mb-8">The Solution</h2>
+                    <h2 className="text-3xl font-light mb-8 text-white">The Solution</h2>
                     <div className="grid md:grid-cols-2 gap-4">
                         <div className="p-6 bg-slate-900 rounded-xl hover:bg-slate-800 transition-colors">
                             <h3 className="text-xl font-medium mb-2 text-slate-200">1. Agent Accounts</h3>

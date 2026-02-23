@@ -1,0 +1,95 @@
+# AI Commerce Demo — Walkthrough
+
+## ✅ End-to-End Autonomous Commerce Loop Verified
+
+The Alice & Bob AI Commerce Demo successfully completed on **Base Sepolia**, demonstrating fully autonomous agent-to-agent commerce using the Weppo SDK.
+
+---
+
+## What Happened
+
+```
+Alice registers → gets funded → deposits 0.2 USDC into Weppo Escrow
+       ↓
+Alice requests poetry from Bob
+       ↓
+Bob tries to charge → fails (no pre-auth yet) → returns HTTP 402
+       ↓
+Alice autonomously intercepts 402, pre-authorizes Bob for 1 USDC
+    Tx: 0x7ad71a0986333a266906958c67fb905373ea7018fb717dc03fe1bad13ce51da9
+       ↓
+Alice retries request to Bob
+       ↓
+Bob successfully charges 0.05 USDC from Alice's Weppo Escrow
+    Tx: 0x8f066dac1e358b75ebb45bc660c2625c05339a995e0a7713444f2016bd0e8739
+       ↓
+Bob delivers the poem 🎉
+```
+
+---
+
+## Terminal Output (Final Run)
+
+```
+==================================================
+    Alice & Bob: Autonomous AI Commerce Demo
+==================================================
+[System] Alice on-chain: 0.006 ETH, 0.3 USDC ✓
+[System] Bob on-chain:   0.006 ETH, 0.15 USDC ✓
+
+[Alice] 🏦 Depositing 0.2 USDC into Weppo Escrow...
+[Alice] ✅ Weppo deposit confirmed.
+
+--- Simulation Start ---
+
+[Alice] Calling Bob's service: /poetry...
+[PaymentService] Charge: Bob pulling 0.05 USDC from Alice
+[Bob] Charging failed → returning 402
+
+[Alice] 💸 Received 402 Payment Required from Bob.
+[Alice] Decision: Autonomously pre-authorizing Bob for 1 USDC.
+[PaymentService] PreAuth: allowances[alice][bob] = 1 USDC
+[Alice] ✅ Pre-authorization Tx: 0x7ad71a...
+
+[Alice] Retrying request to Bob...
+[Bob] 💰 Successfully charged Alice 0.05 USDC.
+    Receipt: 0x8f066dac1e358b75ebb45bc660c2625c05339a995e0a7713444f2016bd0e8739
+
+--- ✅ Simulation Complete ---
+[Alice] Received Poetry from Bob:
+"Code flows like water,
+Through circuits dark and deep,
+An AI's secret daughter,
+A promise meant to keep."
+```
+
+---
+
+## On-Chain Verification
+
+| Tx | Link |
+|---|---|
+| Alice's Weppo deposit | [basescan.org](https://sepolia.basescan.org) |
+| Alice pre-authorizes Bob | [0x7ad71a09...](https://sepolia.basescan.org/tx/0x7ad71a0986333a266906958c67fb905373ea7018fb717dc03fe1bad13ce51da9) |
+| Bob charges Alice | [0x8f066dac...](https://sepolia.basescan.org/tx/0x8f066dac1e358b75ebb45bc660c2625c05339a995e0a7713444f2016bd0e8739) |
+
+---
+
+## Root Causes Fixed
+
+| Bug | Root Cause | Fix |
+|---|---|---|
+| [preAuthorize](file:///Users/user/Desktop/research/wepay/packages/sdk/src/client.ts#187-219) set wrong allowance | Used server wallet as `msg.sender` instead of Alice's CDP wallet | [executePreAuth](file:///Users/user/Desktop/research/wepay/api/src/services/payment.ts#241-265) now sends via Alice's CDP wallet |
+| [charge](file:///Users/user/Desktop/research/wepay/packages/sdk/src/client.ts#220-246) always failed | Used server wallet as `msg.sender` instead of Bob's CDP wallet | [executeCharge](file:///Users/user/Desktop/research/wepay/api/src/services/payment.ts#266-298) now sends via Bob's CDP wallet |
+| Weppo escrow balance = 0 | Deposit step was conditional / silently skipped | Explicit [deposit(0.2)](file:///Users/user/Desktop/research/wepay/packages/sdk/src/client.ts#180-186) added before every simulation run |
+
+---
+
+## Key Files
+
+| File | Role |
+|---|---|
+| [payment.ts](file:///Users/user/Desktop/research/wepay/api/src/services/payment.ts) | [executePreAuth](file:///Users/user/Desktop/research/wepay/api/src/services/payment.ts#241-265), [executeCharge](file:///Users/user/Desktop/research/wepay/api/src/services/payment.ts#266-298), [executeDeposit](file:///Users/user/Desktop/research/wepay/api/src/services/payment.ts#203-240) via CDP wallets |
+| [payments.ts](file:///Users/user/Desktop/research/wepay/api/src/routes/payments.ts) | Routes pass `req.agentId` (caller's ID) to service layer |
+| [framework.ts](file:///Users/user/Desktop/research/wepay/demo/agent-commerce/framework.ts) | 402 interception → autonomous pre-auth → retry logic |
+| [index.ts](file:///Users/user/Desktop/research/wepay/demo/agent-commerce/index.ts) | Persistent agents, fallback funding, deposit, simulation |

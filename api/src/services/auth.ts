@@ -35,10 +35,17 @@ export class AuthService {
      * Creates a new API key for an agent and stores the hash.
      * Also auto-provisions an EVM account using the CDP Server Wallet v2.
      */
-    async createKeyForAgent(agentId: string, label?: string): Promise<string> {
+    async createKeyForAgent(agentId: string, label?: string, userId?: string): Promise<string> {
         // Ensure agent exists
-        const agentCheck = db.prepare('SELECT id FROM agents WHERE id = ?').get(agentId);
-        if (!agentCheck) {
+        const { data: agentRow, error: agentError } = await db
+            .from('agents')
+            .select('id, user_id')
+            .eq('id', agentId)
+            .maybeSingle();
+
+        if (agentError) throw new Error(`DB error checking agent: ${agentError.message}`);
+
+        if (!agentRow) {
             console.log(`[AuthService] Generating secure EVM Account for new agent ${agentId}...`);
             let address = '0x0000000000000000000000000000000000000000'; // fallback
 
@@ -54,17 +61,33 @@ export class AuthService {
             }
 
             // Store securely in our database
-            db.prepare(`
-                INSERT INTO agents (id, wallet_address) 
-                VALUES (?, ?)
-            `).run(agentId, address);
+            const { error: insertError } = await db
+                .from('agents')
+                .insert({
+                    id: agentId,
+                    wallet_address: address,
+                    user_id: userId || null
+                });
+
+            if (insertError) throw new Error(`DB error creating agent: ${insertError.message}`);
+        } else if (userId && !agentRow.user_id) {
+            // Claim existing unowned agent
+            const { error: updateError } = await db
+                .from('agents')
+                .update({ user_id: userId })
+                .eq('id', agentId);
+
+            if (updateError) throw new Error(`DB error claiming agent: ${updateError.message}`);
         }
 
         const apiKey = this.generateApiKey();
         const keyHash = this.hashKey(apiKey);
 
-        const stmt = db.prepare('INSERT INTO api_keys (key_hash, agent_id, label) VALUES (?, ?, ?)');
-        stmt.run(keyHash, agentId, label || null);
+        const { error: keyError } = await db
+            .from('api_keys')
+            .insert({ key_hash: keyHash, agent_id: agentId, label: label || null });
+
+        if (keyError) throw new Error(`DB error creating API key: ${keyError.message}`);
 
         return apiKey; // Return the plain key once
     }
@@ -72,11 +95,19 @@ export class AuthService {
     /**
      * Validates an API key. Returns the agentId if valid, null otherwise.
      */
-    validateKey(apiKey: string): string | null {
+    async validateKey(apiKey: string): Promise<string | null> {
         const keyHash = this.hashKey(apiKey);
-        const stmt = db.prepare('SELECT agent_id FROM api_keys WHERE key_hash = ?');
-        const row = stmt.get(keyHash) as { agent_id: string } | undefined;
+        const { data, error } = await db
+            .from('api_keys')
+            .select('agent_id')
+            .eq('key_hash', keyHash)
+            .maybeSingle();
 
-        return row ? row.agent_id : null;
+        if (error) {
+            console.error('[AuthService] API Key validation error:', error);
+            return null;
+        }
+
+        return data ? data.agent_id : null;
     }
 }

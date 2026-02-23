@@ -36,6 +36,10 @@ export class Weppo {
         return this.client.createPayment(params);
     }
 
+    async deposit(amount: number) {
+        return this.client.deposit(amount);
+    }
+
     async preAuthorize(spender: string, maxAmount: number) {
         return this.client.preAuthorize({ spender, maxAmount });
     }

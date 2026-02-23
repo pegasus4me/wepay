@@ -79,14 +79,19 @@ const MERCHANT_GATEWAY_ABI = [
 ] as const;
 
 // Helper: look up agent's CDP wallet address from DB
-function getWalletAddress(agentId: string): string {
-    const row = db.prepare('SELECT wallet_address FROM agents WHERE id = ?').get(agentId) as { wallet_address: string } | undefined;
-    if (!row || !row.wallet_address) throw new Error(`Wallet address not found for agent ${agentId}`);
-    return row.wallet_address;
+async function getWalletAddress(agentId: string): Promise<string> {
+    const { data, error } = await db
+        .from('agents')
+        .select('wallet_address')
+        .eq('id', agentId)
+        .maybeSingle();
+    if (error) throw new Error(`DB error for agent ${agentId}: ${error.message}`);
+    if (!data || !data.wallet_address) throw new Error(`Wallet address not found for agent ${agentId}`);
+    return data.wallet_address;
 }
 
 // Helper: resolve an agentId OR raw 0x address to an EVM address
-function resolveAddress(idOrAddress: string): string {
+async function resolveAddress(idOrAddress: string): Promise<string> {
     if (idOrAddress.startsWith('0x')) return idOrAddress;
     return getWalletAddress(idOrAddress);
 }
@@ -133,7 +138,7 @@ export class PaymentService {
     async executePayment(agentId: string, recipient: string, amount: number, productId?: string, memo?: string): Promise<{ hash: string; gasUsed: bigint; effectiveGasPrice: bigint }> {
         if (!cdp) throw new Error('CDP Client not configured');
 
-        const walletAddress = getWalletAddress(agentId);
+        const walletAddress = await getWalletAddress(agentId);
 
         // Route to x402 Purchase if productId is present
         if (productId) {
@@ -207,7 +212,7 @@ export class PaymentService {
     async executeDeposit(agentId: string, amount: number): Promise<{ hash: string }> {
         if (!cdp) throw new Error('CDP Client not configured');
         try {
-            const walletAddress = getWalletAddress(agentId);
+            const walletAddress = await getWalletAddress(agentId);
             const decimals = await getUsdcDecimals(this.publicClient);
             const amountInUnits = parseUnits(amount.toString(), decimals);
 
@@ -242,8 +247,8 @@ export class PaymentService {
     async executePreAuth(callerAgentId: string, spenderId: string, maxAmount: number): Promise<{ hash: string }> {
         if (!cdp) throw new Error('CDP Client not configured');
 
-        const callerAddress = getWalletAddress(callerAgentId);   // Alice
-        const spenderAddress = resolveAddress(spenderId);          // Bob
+        const callerAddress = await getWalletAddress(callerAgentId);   // Alice
+        const spenderAddress = await resolveAddress(spenderId);          // Bob
 
         const decimals = await getUsdcDecimals(this.publicClient);
         const amountInUnits = parseUnits(maxAmount.toString(), decimals);
@@ -267,8 +272,8 @@ export class PaymentService {
     async executeCharge(callerAgentId: string, fromId: string, amount: number, memo: string): Promise<{ hash: string; gasUsed: bigint; effectiveGasPrice: bigint }> {
         if (!cdp) throw new Error('CDP Client not configured');
 
-        const callerAddress = getWalletAddress(callerAgentId);  // Bob (the spender)
-        const fromAddress = resolveAddress(fromId);               // Alice (the payer)
+        const callerAddress = await getWalletAddress(callerAgentId);  // Bob (the spender)
+        const fromAddress = await resolveAddress(fromId);               // Alice (the payer)
 
         const decimals = await getUsdcDecimals(this.publicClient);
         const amountInUnits = parseUnits(amount.toString(), decimals);

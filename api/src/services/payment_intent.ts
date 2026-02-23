@@ -1,56 +1,64 @@
-import db from '../db.js';
+import supabase from '../db.js';
 import crypto from 'crypto';
 
 export interface PaymentIntentInput {
     amount: number;
     currency: string;
     description?: string;
-    payerId?: string; // Optional: restrict who can pay this
+    payerId?: string;
 }
 
 export class PaymentIntentService {
-    createIntent(agentId: string, data: PaymentIntentInput) {
+    async createIntent(agentId: string, data: PaymentIntentInput) {
         const id = `pi_${crypto.randomUUID()}`;
 
-        // Ensure agent exists (simple onboarding for MVP)
-        db.prepare('INSERT OR IGNORE INTO agents (id, wallet_address) VALUES (?, ?)').run(agentId, '0xE5261f469bAc513C0a0575A3b686847F48Bc6687');
+        // Ensure agent exists
+        await supabase.from('agents').upsert({
+            id: agentId,
+            wallet_address: '0xE5261f469bAc513C0a0575A3b686847F48Bc6687'
+        }, { onConflict: 'id', ignoreDuplicates: true });
 
-        const stmt = db.prepare(`
-            INSERT INTO payment_intents (id, agent_id, amount, currency, description, status, payer_id)
-            VALUES (?, ?, ?, ?, ?, 'pending', ?)
-        `);
-
-        stmt.run(
+        const { error } = await supabase.from('payment_intents').insert({
             id,
-            agentId,
-            data.amount,
-            data.currency,
-            data.description || null,
-            data.payerId || null
-        );
+            agent_id: agentId,
+            amount: data.amount,
+            currency: data.currency,
+            description: data.description || null,
+            status: 'pending',
+            payer_id: data.payerId || null,
+        });
 
+        if (error) throw new Error(`Failed to create intent: ${error.message}`);
         return this.getIntent(id);
     }
 
-    getIntent(id: string): any {
-        const row = db.prepare('SELECT * FROM payment_intents WHERE id = ?').get(id) as any;
-        if (!row) return null;
+    async getIntent(id: string): Promise<any> {
+        const { data } = await supabase
+            .from('payment_intents')
+            .select('*')
+            .eq('id', id)
+            .single();
+
+        if (!data) return null;
         return {
-            id: row.id,
-            agentId: row.agent_id,
-            amount: row.amount,
-            currency: row.currency,
-            description: row.description,
-            status: row.status,
-            payerId: row.payer_id,
-            paymentHash: row.payment_hash,
-            createdAt: row.created_at
+            id: data.id,
+            agentId: data.agent_id,
+            amount: data.amount,
+            currency: data.currency,
+            description: data.description,
+            status: data.status,
+            payerId: data.payer_id,
+            paymentHash: data.payment_hash,
+            createdAt: data.created_at,
         };
     }
 
-    // Mark as paid (called by PaymentService later)
-    markAsPaid(id: string, paymentHash: string) {
-        db.prepare('UPDATE payment_intents SET status = ?, payment_hash = ? WHERE id = ?')
-            .run('paid', paymentHash, id);
+    async markAsPaid(id: string, paymentHash: string) {
+        const { error } = await supabase
+            .from('payment_intents')
+            .update({ status: 'paid', payment_hash: paymentHash })
+            .eq('id', id);
+
+        if (error) throw new Error(`Failed to mark intent as paid: ${error.message}`);
     }
 }
