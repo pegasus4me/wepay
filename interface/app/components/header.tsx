@@ -12,7 +12,7 @@ export function HeaderPage() {
                 </ul>
             </nav>
             <div className="flex items-center gap-4">
-                <button className="bg-white text-black px-4 py-2 rounded-full text-sm font-medium hover:bg-neutral-200 transition-colors">learn more</button>
+                <Link href="/dashboard" className="bg-white text-black px-4 py-2 rounded-full text-sm font-medium hover:bg-neutral-200 transition-colors">dashboard</Link>
             </div>
         </header>
     )

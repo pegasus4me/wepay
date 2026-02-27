@@ -64,11 +64,18 @@ class WeppoClient {
         };
         try {
             const response = await fetch(url, { ...options, headers });
-            const data = await response.json();
-            if (!response.ok) {
-                this.handleError(response.status, data);
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+                const data = await response.json();
+                if (!response.ok) {
+                    this.handleError(response.status, data);
+                }
+                return data;
             }
-            return data;
+            else {
+                const text = await response.text();
+                throw new errors_js_1.WeppoError(`API returned non-JSON response (${response.status}). Expected JSON but got ${contentType || 'unknown'}. URL: ${url}`, 'INVALID_RESPONSE', response.status);
+            }
         }
         catch (error) {
             if (error instanceof errors_js_1.WeppoError)
@@ -77,7 +84,7 @@ class WeppoClient {
         }
     }
     handleError(status, data) {
-        const message = data.message || 'An unexpected error occurred';
+        const message = data.error || data.message || 'An unexpected error occurred';
         const code = data.code;
         if (status === 401)
             throw new errors_js_1.AuthenticationError(message);
@@ -155,6 +162,12 @@ class WeppoClient {
         return this.request('/payments', {
             method: 'POST',
             body: JSON.stringify(params),
+        });
+    }
+    async deposit(amount) {
+        return this.request('/payments/deposit', {
+            method: 'POST',
+            body: JSON.stringify({ amount }),
         });
     }
     async preAuthorize(params) {

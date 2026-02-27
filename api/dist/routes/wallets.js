@@ -1,16 +1,40 @@
 import { Router } from 'express';
 import { WalletService } from '../services/wallet.js';
-import { config } from '../config.js';
-import { privateKeyToAccount } from 'viem/accounts';
+import { PaymentService } from '../services/payment.js';
 const router = Router();
 const walletService = new WalletService();
+const paymentService = new PaymentService();
+router.get('/:agentId/allowances', async (req, res) => {
+    try {
+        const agentId = req.params.agentId;
+        const allowances = await paymentService.getAllowances(agentId);
+        res.json(allowances);
+    }
+    catch (error) {
+        console.error('Allowances fetch failed:', error);
+        res.status(500).json({ message: error.message || 'Failed to fetch allowances' });
+    }
+});
+router.post('/:agentId/pre-authorize', async (req, res) => {
+    try {
+        const agentId = req.params.agentId;
+        const { spender, amount } = req.body;
+        if (!spender || amount === undefined) {
+            return res.status(400).json({ error: 'Missing spender or amount' });
+        }
+        // Execute the pre-authorization using CDP Server Wallet on behalf of the agent
+        const result = await paymentService.executePreAuth(agentId, spender, Number(amount));
+        res.json({ status: 'confirmed', txHash: result.hash });
+    }
+    catch (error) {
+        console.error('Pre-authorize failed:', error);
+        res.status(500).json({ message: error.message || 'Failed to pre-authorize' });
+    }
+});
 router.get('/:agentId/balance', async (req, res) => {
     try {
-        if (!config.privateKey) {
-            return res.status(500).json({ message: 'Server private key not configured' });
-        }
-        // In this POC, we use the server's main wallet as the source of funds for all agents
-        const address = privateKeyToAccount(config.privateKey).address;
+        const agentId = req.params.agentId;
+        const address = await walletService.getAgentAddress(agentId);
         const balance = await walletService.getBalance(address);
         res.json({
             ...balance,

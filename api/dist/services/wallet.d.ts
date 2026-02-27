@@ -4,5 +4,8 @@ export declare class WalletService {
         amount: number;
         currency: string;
     }>;
-    getAgentWallet(agentId: string): Promise<string>;
+    getAgentAddress(agentId: string): Promise<string>;
+    executeWithdrawal(agentId: string, toAddress: string, amount: number): Promise<{
+        hash: string;
+    }>;
 }

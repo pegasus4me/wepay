@@ -19,6 +19,7 @@ const client_js_1 = require("./client.js");
 __exportStar(require("./types.js"), exports);
 __exportStar(require("./errors.js"), exports);
 __exportStar(require("./x402.js"), exports);
+__exportStar(require("./express.js"), exports);
 /**
  * Weppo: The Consumer Abstraction Layer for Autonomous AI Agent Payments
  */
@@ -36,6 +37,9 @@ class Weppo {
      */
     async pay(params) {
         return this.client.createPayment(params);
+    }
+    async deposit(amount) {
+        return this.client.deposit(amount);
     }
     async preAuthorize(spender, maxAmount) {
         return this.client.preAuthorize({ spender, maxAmount });

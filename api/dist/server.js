@@ -10,10 +10,16 @@ const app = express();
 const authService = new AuthService();
 app.use(cors());
 app.use(express.json());
-// Auth middleware
-app.use((req, res, next) => {
-    // Skip auth for health check and auth routes
-    if (req.path === '/health' || req.path.startsWith('/auth')) {
+import transactionsRoutes from './routes/transactions.js';
+// Auth middleware (async — validateKey queries Supabase)
+app.use(async (req, res, next) => {
+    // Skip auth for health check, auth routes, and viewing public balances/transactions/dashboard management
+    if (req.path === '/health' ||
+        req.path.startsWith('/auth') ||
+        (req.method === 'GET' && req.path.startsWith('/v1/wallets/') && req.path.endsWith('/balance')) ||
+        (req.method === 'GET' && req.path.startsWith('/v1/wallets/') && req.path.endsWith('/allowances')) ||
+        (req.method === 'POST' && req.path.startsWith('/v1/wallets/') && req.path.endsWith('/pre-authorize')) ||
+        (req.method === 'GET' && req.path.startsWith('/v1/transactions'))) {
         return next();
     }
     const authHeader = req.headers.authorization;
@@ -21,12 +27,11 @@ app.use((req, res, next) => {
         return res.status(401).json({ message: 'Unauthorized: Missing or invalid Authorization header' });
     }
     const apiKey = authHeader.split(' ')[1];
-    const agentId = authService.validateKey(apiKey);
+    const agentId = await authService.validateKey(apiKey);
     if (!agentId) {
         return res.status(401).json({ message: 'Unauthorized: Invalid API Key' });
     }
-    // Attach agentId to request for downstream use (if needed)
-    // (req as any).agentId = agentId;
+    req.agentId = agentId;
     next();
 });
 app.get('/health', (req, res) => {
@@ -38,6 +43,7 @@ app.use('/v1/payments', paymentRoutes);
 app.use('/v1/wallets', walletRoutes);
 app.use('/v1/market', marketRoutes);
 app.use('/v1/payment-intents', paymentIntentRoutes);
+app.use('/v1/transactions', transactionsRoutes);
 app.listen(config.port, () => {
     console.log(`
 🚀 Weppo API — The Consumer Abstraction Layer

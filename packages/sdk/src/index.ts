@@ -15,6 +15,7 @@ import { WeppoClient } from './client.js';
 export * from './types.js';
 export * from './errors.js';
 export * from './x402.js';
+export * from './express.js';
 
 /**
  * Weppo: The Consumer Abstraction Layer for Autonomous AI Agent Payments
@@ -34,6 +35,10 @@ export class Weppo {
      */
     async pay(params: PaymentRequest) {
         return this.client.createPayment(params);
+    }
+
+    async deposit(amount: number) {
+        return this.client.deposit(amount);
     }
 
     async preAuthorize(spender: string, maxAmount: number) {

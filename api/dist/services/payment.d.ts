@@ -2,20 +2,29 @@ export declare class PaymentService {
     private account;
     private publicClient;
     private walletClient;
-    executePayment(recipient: string, amount: number, productId?: string, memo?: string): Promise<{
+    private logTransaction;
+    getAllowances(agentId: string): Promise<{
+        spenderId: any;
+        spenderAddress: string;
+        amount: number;
+    }[]>;
+    executePayment(agentId: string, recipient: string, amount: number, productId?: string, memo?: string): Promise<{
         hash: string;
         gasUsed: bigint;
         effectiveGasPrice: bigint;
     }>;
-    executePurchase(gatewayAddress: string, productId: string, amount: number, memo: string): Promise<{
+    executePurchase(agentId: string, walletAddress: string, gatewayAddress: string, productId: string, amount: number, memo: string): Promise<{
         hash: string;
         gasUsed: bigint;
         effectiveGasPrice: bigint;
     }>;
-    executePreAuth(spender: string, maxAmount: number): Promise<{
+    executeDeposit(agentId: string, amount: number): Promise<{
         hash: string;
     }>;
-    executeCharge(from: string, amount: number, memo: string): Promise<{
+    executePreAuth(callerAgentId: string, spenderId: string, maxAmount: number): Promise<{
+        hash: string;
+    }>;
+    executeCharge(callerAgentId: string, fromId: string, amount: number, memo: string): Promise<{
         hash: string;
         gasUsed: bigint;
         effectiveGasPrice: bigint;
