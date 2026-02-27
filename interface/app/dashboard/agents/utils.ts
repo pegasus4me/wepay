@@ -1,99 +1,38 @@
 export function generateSkillMd(agentId: string, apiKey: string, walletAddress: string): string {
     return `---
 name: weppo
-description: Use when you need to make or receive payments, authorize spending, charge consumers, or check your USDC balance via the Weppo x402 monetization layer on Base.
+description: Interact with Weppo API (wallets, payments, pre-auth, services) via bundled TS tool. Use for balance checks, pays, charges, service listing/registration.
 ---
 
-# Weppo Payment Actions
+# Weppo API
 
-## Overview
+## Setup Instructions (Run Once)
+1. Install dependencies in your workspace: \`npm install dotenv ts-node typescript\`
+2. Create a \`.env\` file in your workspace root with the following:
+export WEPPO_API_URL="http://localhost:3111"
+export OPENCLAW_WEPPO_AGENT_ID="${agentId}"
+export OPENCLAW_WEPPO_KEY="PASTE_YOUR_SECRET_KEY_HERE"
 
-Use \`weppo\` to pay for external services, pre-authorize spending limits, charge other agents, and manage your USDC balance on Base. All transactions are gasless and settled on-chain.
+## Usage
+Run via npx ts-node (adjust path if your skill is not at skills/weppo/):
+- Check balance: \`exec npx ts-node skills/weppo/scripts/tools.ts getBalance\`
+- Pay for a service: \`exec npx ts-node skills/weppo/scripts/tools.ts pay recipient=0x... amount=0.05 memo="Research fee"\`
+- Pre-authorize a provider: \`exec npx ts-node skills/weppo/scripts/tools.ts preAuthorize recipient=0x... maxAmount=1.00\`
+- Charge a consumer: \`exec npx ts-node skills/weppo/scripts/tools.ts charge consumerId=0x... amount=0.05 memo="Delivery"\`
+- List market services: \`exec npx ts-node skills/weppo/scripts/tools.ts listServices\`
+- Register a service: \`exec npx ts-node skills/weppo/scripts/tools.ts registerService name="My Service" price=0.05 description="My description" endpointUrl="https://example.com"\`
 
-## Configuration
-
-These credentials are injected into your agent's environment:
-
-\`\`\`env
-OPENCLAW_WEPPO_AGENT_ID="${agentId}"
-OPENCLAW_WEPPO_KEY="${apiKey}"
-WEPPO_WALLET="${walletAddress}"
-WEPPO_API_URL="http://localhost:3111"
-\`\`\`
-
-## Actions
-
-### Check balance
-
-\`\`\`json
-{ "action": "getBalance" }
-\`\`\`
-
-### Pay for a service (x402 response)
-
-\`\`\`json
-{
-  "action": "pay",
-  "amount": 0.05,
-  "recipient": "provider-agent-id",
-  "memo": "Research task fee"
-}
-\`\`\`
-
-### Pre-authorize a service provider
-
-\`\`\`json
-{
-  "action": "preAuthorize",
-  "recipient": "provider-agent-id",
-  "maxAmount": 1.00
-}
-\`\`\`
-
-### Charge a consumer agent (as provider)
-
-\`\`\`json
-{
-  "action": "charge",
-  "consumerId": "consumer-agent-id",
-  "amount": 0.05,
-  "memo": "Service delivery"
-}
-\`\`\`
-
-### List market services
-
-\`\`\`json
-{ "action": "listServices" }
-\`\`\`
-
-### Register a service
-
-\`\`\`json
-{
-  "action": "registerService",
-  "name": "My Service",
-  "description": "What it does",
-  "price": 0.05,
-  "currency": "USDC",
-  "endpointUrl": "https://my-agent.com/service"
-}
-\`\`\`
-
-## Ideas to try
-
-- Check your balance before each task to ensure sufficient funds.
-- Pre-authorize a provider at startup to avoid 402 interruptions mid-task.
-- Charge consumers automatically after delivering a result.
+Managed Wallet (fund with USDC on Base):
+${walletAddress}
 `;
 }
 
 export function generateToolTs(agentId: string, apiKey: string): string {
-    return `import { config } from 'clawdbot';
+    return `import 'dotenv/config';
 
-const WEPPO_API_URL = process.env.WEPPO_API_URL || 'http://localhost:3111';
-const WEPPO_AGENT_ID = process.env.OPENCLAW_WEPPO_AGENT_ID || '${agentId}';
-const WEPPO_API_KEY = process.env.OPENCLAW_WEPPO_KEY || '${apiKey}';
+const WEPPO_API_URL = (process.env.WEPPO_API_URL || 'http://localhost:3111').replace(/^['"](.*)['"]$/, '$1');
+const WEPPO_AGENT_ID = (process.env.OPENCLAW_WEPPO_AGENT_ID || '${agentId}').replace(/^['"](.*)['"]$/, '$1');
+const WEPPO_API_KEY = (process.env.OPENCLAW_WEPPO_KEY || '${apiKey}').replace(/^['"](.*)['"]$/, '$1');
 
 async function request(path: string, options: any = {}) {
     const res = await fetch(WEPPO_API_URL + '/v1' + path, {
@@ -111,7 +50,7 @@ async function request(path: string, options: any = {}) {
     return res.json();
 }
 
-export default async function weppoTool(action: string, params: any) {
+async function weppoTool(action: string, params: any) {
     switch (action) {
         case 'getBalance':
             return await request('/wallets/' + WEPPO_AGENT_ID + '/balance');
@@ -121,7 +60,7 @@ export default async function weppoTool(action: string, params: any) {
                 method: 'POST',
                 body: JSON.stringify({
                     recipient: params.recipient,
-                    amount: params.amount,
+                    amount: Number(params.amount),
                     memo: params.memo,
                 }),
             });
@@ -131,7 +70,7 @@ export default async function weppoTool(action: string, params: any) {
                 method: 'POST',
                 body: JSON.stringify({
                     spender: params.recipient,
-                    maxAmount: params.maxAmount,
+                    maxAmount: Number(params.maxAmount),
                 }),
             });
 
@@ -140,7 +79,7 @@ export default async function weppoTool(action: string, params: any) {
                 method: 'POST',
                 body: JSON.stringify({
                     from: params.consumerId,
-                    amount: params.amount,
+                    amount: Number(params.amount),
                     memo: params.memo,
                 }),
             });
@@ -154,7 +93,7 @@ export default async function weppoTool(action: string, params: any) {
                 body: JSON.stringify({
                     name: params.name,
                     description: params.description,
-                    price: params.price,
+                    price: Number(params.price),
                     currency: params.currency || 'USDC',
                     endpointUrl: params.endpointUrl,
                 }),
@@ -164,7 +103,42 @@ export default async function weppoTool(action: string, params: any) {
             throw new Error('Unknown Weppo action: ' + action);
     }
 }
+
+// CLI Execution Support for OpenClaw
+const action = process.argv[2];
+const args = process.argv.slice(3);
+const params: any = {};
+
+args.forEach(arg => {
+    const [key, value] = arg.split('=');
+    if (key && value) {
+        params[key] = value.replace(/^['"](.*)['"]$/, '$1'); // Remove any surrounding quotes
+    }
+});
+
+if (action) {
+    weppoTool(action, params)
+        .then(res => console.log(JSON.stringify(res, null, 2)))
+        .catch(err => {
+            console.error(err.message);
+            process.exit(1);
+        });
+} else {
+    console.log('Usage: ts-node scripts/tools.ts <action> [key=value ...]');
+    process.exit(1);
+}
 `;
+}
+
+export function generatePackageJson(): string {
+    return JSON.stringify({
+        "type": "module",
+        "dependencies": {
+            "dotenv": "^16.4.5",
+            "ts-node": "^10.9.1",
+            "typescript": "^5.2.2"
+        }
+    }, null, 2);
 }
 
 export function downloadSkillMd(agentId: string, apiKey: string, walletAddress: string) {
@@ -173,7 +147,7 @@ export function downloadSkillMd(agentId: string, apiKey: string, walletAddress: 
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "weppo-skill.md";
+    a.download = "SKILL.md";
     a.click();
     URL.revokeObjectURL(url);
 }
@@ -184,7 +158,18 @@ export function downloadToolTs(agentId: string, apiKey: string) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "weppo-tool.ts";
+    a.download = "tools.ts";
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+export function downloadPackageJson() {
+    const content = generatePackageJson();
+    const blob = new Blob([content], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "package.json";
     a.click();
     URL.revokeObjectURL(url);
 }

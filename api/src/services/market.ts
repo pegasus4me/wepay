@@ -45,6 +45,17 @@ export class MarketService {
         return data ? this.mapRow(data) : null;
     }
 
+    async getServiceByEndpoint(agentId: string, path: string) {
+        const { data } = await supabase
+            .from('agent_services')
+            .select('*')
+            .eq('provider_agent_id', agentId)
+            .eq('endpoint_url', path)
+            .maybeSingle();
+
+        return data ? this.mapRow(data) : null;
+    }
+
     async listServices() {
         const { data } = await supabase
             .from('agent_services')

@@ -7,11 +7,13 @@ export const config = {
     privateKey: process.env.PRIVATE_KEY as `0x${string}`,
     rpcUrl: process.env.BASE_SEPOLIA_RPC_URL || 'https://sepolia.base.org',
     usdcAddress: (process.env.USDC_CONTRACT_ADDRESS || '0x036CbD53842c5426634e7929541eC2318f3dCF7e') as `0x${string}`,
-    weppoAddress: (process.env.WEPPO_CONTRACT_ADDRESS || '0x0000000000000000000000000000000000000000') as `0x${string}`,
-    forwarderAddress: (process.env.FORWARDER_CONTRACT_ADDRESS || '0x0000000000000000000000000000000000000000') as `0x${string}`,
+    weppoAddress: (process.env.WEPPO_CONTRACT_ADDRESS || '0x82D9828fdCAD4082721932201d10AF4446bBd0f9') as `0x${string}`,
+    forwarderAddress: (process.env.FORWARDER_CONTRACT_ADDRESS || '0xc4Bc93234b78B63F63A72F58E84B45311827d406') as `0x${string}`,
     cdpApiKeyId: process.env.CDP_API_KEY_ID,
     cdpApiKeySecret: process.env.CDP_API_KEY_SECRET,
     cdpWalletSecret: process.env.CDP_WALLET_SECRET,
+    supabaseUrl: process.env.SUPABASE_URL,
+    supabaseKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
 };
 
 if (!config.privateKey) {

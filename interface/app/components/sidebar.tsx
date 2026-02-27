@@ -23,6 +23,7 @@ import {
   RiShieldKeyholeLine,
   RiSettings4Line,
   RiLogoutBoxLine,
+  RiMoneyDollarCircleLine,
 } from "@remixicon/react"
 import Link from "next/link"
 import { supabase } from "@/lib/supabase"
@@ -41,6 +42,11 @@ const navItems = [
     icon: RiRobot2Line,
   },
   {
+    title: "Monetize",
+    url: "/dashboard/monetize",
+    icon: RiMoneyDollarCircleLine,
+  },
+  {
     title: "Treasury",
     url: "/dashboard/treasury",
     icon: RiWallet3Line,
@@ -49,11 +55,6 @@ const navItems = [
     title: "Tracking",
     url: "/dashboard/tracking",
     icon: RiBillLine,
-  },
-  {
-    title: "Pre-authorizations",
-    url: "/dashboard/permissions",
-    icon: RiShieldKeyholeLine,
   },
 ]
 

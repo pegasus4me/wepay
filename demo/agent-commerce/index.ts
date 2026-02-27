@@ -31,7 +31,7 @@ async function registerAgent(agentId: string, label: string) {
     const res = await fetch(AUTH_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ agentId, label }),
+        body: JSON.stringify({ agentId, label, customKey: agentId }),
     });
     if (!res.ok) throw new Error(`Registration failed: ${await res.text()}`);
     return res.json() as Promise<{ apiKey: string; agentId: string }>;

@@ -1,4 +1,4 @@
-import { createPublicClient, createWalletClient, http, parseUnits, encodeFunctionData } from 'viem';
+import { createPublicClient, createWalletClient, http, parseUnits, encodeFunctionData, getAddress } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { baseSepolia } from 'viem/chains';
 import { config } from '../config.js';
@@ -26,55 +26,28 @@ const USDC_ABI = [
         outputs: [{ name: 'success', type: 'bool' }],
     },
     {
+        name: 'transferWithAuthorization',
+        type: 'function',
+        stateMutability: 'nonpayable',
+        inputs: [
+            { name: 'from', type: 'address' },
+            { name: 'to', type: 'address' },
+            { name: 'value', type: 'uint256' },
+            { name: 'validAfter', type: 'uint256' },
+            { name: 'validBefore', type: 'uint256' },
+            { name: 'nonce', type: 'bytes32' },
+            { name: 'v', type: 'uint8' },
+            { name: 'r', type: 'bytes32' },
+            { name: 's', type: 'bytes32' }
+        ],
+        outputs: [],
+    },
+    {
         name: 'decimals',
         type: 'function',
         stateMutability: 'view',
         inputs: [],
         outputs: [{ name: 'decimals', type: 'uint8' }],
-    },
-] as const;
-
-const WEPPO_ABI = [
-    {
-        name: 'preAuthorize',
-        type: 'function',
-        stateMutability: 'nonpayable',
-        inputs: [
-            { name: 'spender', type: 'address' },
-            { name: 'maxAmount', type: 'uint256' },
-        ],
-        outputs: [],
-    },
-    {
-        name: 'charge',
-        type: 'function',
-        stateMutability: 'nonpayable',
-        inputs: [
-            { name: 'from', type: 'address' },
-            { name: 'amount', type: 'uint256' },
-            { name: 'memo', type: 'string' },
-        ],
-        outputs: [],
-    },
-    {
-        name: 'deposit',
-        type: 'function',
-        stateMutability: 'nonpayable',
-        inputs: [{ name: 'amount', type: 'uint256' }],
-        outputs: [],
-    },
-] as const;
-
-const MERCHANT_GATEWAY_ABI = [
-    {
-        name: 'buy',
-        type: 'function',
-        stateMutability: 'nonpayable',
-        inputs: [
-            { name: '_productId', type: 'uint256' },
-            { name: '_memo', type: 'string' }
-        ],
-        outputs: [],
     },
 ] as const;
 
@@ -92,30 +65,17 @@ async function getWalletAddress(agentId: string): Promise<string> {
 
 // Helper: resolve an agentId OR raw 0x address to an EVM address
 async function resolveAddress(idOrAddress: string): Promise<string> {
-    if (idOrAddress.startsWith('0x')) return idOrAddress;
+    if (idOrAddress.startsWith('0x')) return getAddress(idOrAddress);
     return getWalletAddress(idOrAddress);
 }
 
-// Helper: get USDC decimals (cached conceptually, always 6 for USDC)
+// Helper: get USDC decimals
 async function getUsdcDecimals(publicClient: any): Promise<number> {
     return publicClient.readContract({
         address: config.usdcAddress,
         abi: USDC_ABI,
         functionName: 'decimals',
     });
-}
-
-// Helper: send a tx via CDP from a given agent's wallet
-async function sendViaCdp(agentAddress: string, to: `0x${string}`, data: `0x${string}`, publicClient: any): Promise<`0x${string}`> {
-    if (!cdp) throw new Error('CDP Client not configured');
-    const tx = await cdp.evm.sendTransaction({
-        address: agentAddress,
-        transaction: { to, data, value: BigInt(0) },
-        network: 'base-sepolia',
-    });
-    const hash = tx.transactionHash as `0x${string}`;
-    await publicClient.waitForTransactionReceipt({ hash, timeout: 60000 });
-    return hash;
 }
 
 export class PaymentService {
@@ -132,6 +92,35 @@ export class PaymentService {
         transport: http(config.rpcUrl),
     });
 
+    private async logTransaction(data: {
+        hash: string;
+        agentId: string;
+        recipient: string;
+        amount: number;
+        currency?: string;
+        memo?: string;
+        type: string;
+        gasUsed?: bigint;
+        effectiveGasPrice?: bigint;
+    }) {
+        try {
+            await db.from('transactions').insert({
+                hash: data.hash,
+                agent_id: data.agentId,
+                recipient: data.recipient,
+                amount: data.amount,
+                currency: data.currency || 'USDC',
+                memo: data.memo || null,
+                type: data.type,
+                gas_used: data.gasUsed?.toString(),
+                effective_gas_price: data.effectiveGasPrice?.toString(),
+            });
+            console.log(`[DB] Logged transaction ${data.hash}`);
+        } catch (e) {
+            console.error(`[DB] Failed to log transaction ${data.hash}:`, e);
+        }
+    }
+
     // -------------------------------------------------------------------------
     // Direct P2P Payment (USDC transfer)
     // -------------------------------------------------------------------------
@@ -140,18 +129,13 @@ export class PaymentService {
 
         const walletAddress = await getWalletAddress(agentId);
 
-        // Route to x402 Purchase if productId is present
-        if (productId) {
-            return this.executePurchase(agentId, walletAddress, recipient, productId, amount, memo || '');
-        }
-
         const decimals = await getUsdcDecimals(this.publicClient);
         const amountInUnits = parseUnits(amount.toString(), decimals);
 
         const data = encodeFunctionData({
             abi: USDC_ABI,
             functionName: 'transfer',
-            args: [recipient as `0x${string}`, amountInUnits]
+            args: [getAddress(recipient), amountInUnits]
         });
 
         console.log(`[PaymentService] USDC transfer via CDP from ${walletAddress}...`);
@@ -163,189 +147,63 @@ export class PaymentService {
 
         const hash = tx.transactionHash as `0x${string}`;
         const receipt = await this.publicClient.waitForTransactionReceipt({ hash });
+
+        await this.logTransaction({
+            hash,
+            agentId,
+            recipient,
+            amount,
+            memo,
+            type: 'payment',
+            gasUsed: receipt.gasUsed,
+            effectiveGasPrice: receipt.effectiveGasPrice
+        });
+
         return { hash, gasUsed: receipt.gasUsed, effectiveGasPrice: receipt.effectiveGasPrice };
     }
 
     // -------------------------------------------------------------------------
-    // x402 Purchase (approve + buy via MerchantGateway)
+    // Open Economy x402 Settlement (EIP-3009)
+    // Relays a signed transferWithAuthorization directly to USDC contract
     // -------------------------------------------------------------------------
-    async executePurchase(agentId: string, walletAddress: string, gatewayAddress: string, productId: string, amount: number, memo: string): Promise<{ hash: string; gasUsed: bigint; effectiveGasPrice: bigint }> {
+    async relayEip3009(sellerAgentId: string, eip3009Payload: any): Promise<{ hash: string; gasUsed: bigint; effectiveGasPrice: bigint }> {
         if (!cdp) throw new Error('CDP Client not configured');
+        
+        // The seller is the one receiving the payment. They pay the gas via their CDP wallet.
+        const relayerAddress = await getWalletAddress(sellerAgentId);
 
-        const decimals = await getUsdcDecimals(this.publicClient);
-        const amountInUnits = parseUnits(amount.toString(), decimals);
+        const { from, to, value, validAfter, validBefore, nonce, v, r, s } = eip3009Payload;
 
-        // 1. Approve Gateway to spend USDC
-        console.log(`[PaymentService] Approving Gateway ${gatewayAddress} for ${amount} USDC...`);
-        const approveData = encodeFunctionData({
-            abi: [{ name: 'approve', type: 'function', stateMutability: 'nonpayable', inputs: [{ name: 'spender', type: 'address' }, { name: 'amount', type: 'uint256' }], outputs: [{ name: 'success', type: 'bool' }] }],
-            functionName: 'approve',
-            args: [gatewayAddress as `0x${string}`, amountInUnits],
+        const data = encodeFunctionData({
+            abi: USDC_ABI,
+            functionName: 'transferWithAuthorization',
+            args: [from, to, BigInt(value), BigInt(validAfter), BigInt(validBefore), nonce, v, r, s]
         });
-        await sendViaCdp(walletAddress, config.usdcAddress, approveData, this.publicClient);
 
-        // 2. Call buy() on Gateway
-        let productIdBigInt: bigint;
-        try { productIdBigInt = BigInt(productId); } catch { productIdBigInt = 0n; }
-
-        console.log(`[PaymentService] Calling buy() for Product ${productIdBigInt}...`);
-        const buyData = encodeFunctionData({
-            abi: MERCHANT_GATEWAY_ABI,
-            functionName: 'buy',
-            args: [productIdBigInt, memo],
-        });
+        console.log(`[PaymentService] Relaying EIP-3009 signature for ${value} USDC from ${from} to ${to}...`);
+        
         const tx = await cdp.evm.sendTransaction({
-            address: walletAddress,
-            transaction: { to: gatewayAddress, data: buyData, value: BigInt(0) },
+            address: relayerAddress,
+            transaction: { to: config.usdcAddress, data, value: BigInt(0) },
             network: 'base-sepolia',
         });
 
         const hash = tx.transactionHash as `0x${string}`;
         const receipt = await this.publicClient.waitForTransactionReceipt({ hash });
-        return { hash, gasUsed: receipt.gasUsed, effectiveGasPrice: receipt.effectiveGasPrice };
-    }
 
-    // -------------------------------------------------------------------------
-    // Deposit USDC into Weppo Escrow (approve + deposit)
-    // msg.sender = agent's CDP wallet
-    // -------------------------------------------------------------------------
-    async executeDeposit(agentId: string, amount: number): Promise<{ hash: string }> {
-        if (!cdp) throw new Error('CDP Client not configured');
-        try {
-            const walletAddress = await getWalletAddress(agentId);
-            const decimals = await getUsdcDecimals(this.publicClient);
-            const amountInUnits = parseUnits(amount.toString(), decimals);
+        // Log the relayed meta-transaction
+        await this.logTransaction({
+            hash,
+            agentId: from,
+            recipient: to,
+            amount: Number(value) / 1e6, // Assuming 6 decimals
+            memo: `x402 Settled via EIP-3009`,
+            type: 'eip3009_transfer',
 
-            // Step 1: approve(weppoAddress, amount)
-            console.log(`[PaymentService] Approving Weppo for ${amount} USDC deposit (${agentId})...`);
-            const approveData = encodeFunctionData({
-                abi: [{ name: 'approve', type: 'function', stateMutability: 'nonpayable', inputs: [{ name: 'spender', type: 'address' }, { name: 'amount', type: 'uint256' }], outputs: [{ name: 'success', type: 'bool' }] }],
-                functionName: 'approve',
-                args: [config.weppoAddress, amountInUnits],
-            });
-            await sendViaCdp(walletAddress, config.usdcAddress, approveData, this.publicClient);
-
-            console.log(`[PaymentService] Waiting 5s for allowance to propagate...`);
-            await new Promise(r => setTimeout(r, 5000));
-
-            // Step 2: deposit(amount)
-            console.log(`[PaymentService] Depositing ${amount} USDC into Weppo Escrow (${agentId})...`);
-            const depositData = encodeFunctionData({
-                abi: WEPPO_ABI,
-                functionName: 'deposit',
-                args: [amountInUnits],
-            });
-            const hash = await sendViaCdp(walletAddress, config.weppoAddress, depositData, this.publicClient);
-            return { hash };
-        } catch (error: any) {
-            console.error(`[PaymentService] Deposit failed for ${agentId}:`, error);
-            throw new Error(`Deposit failed: ${error.message || error}`);
-        }
-    }
-
-
-    async executePreAuth(callerAgentId: string, spenderId: string, maxAmount: number): Promise<{ hash: string }> {
-        if (!cdp) throw new Error('CDP Client not configured');
-
-        const callerAddress = await getWalletAddress(callerAgentId);   // Alice
-        const spenderAddress = await resolveAddress(spenderId);          // Bob
-
-        const decimals = await getUsdcDecimals(this.publicClient);
-        const amountInUnits = parseUnits(maxAmount.toString(), decimals);
-
-        console.log(`[PaymentService] PreAuth: allowances[${callerAddress}][${spenderAddress}] = ${maxAmount} USDC`);
-        const preAuthData = encodeFunctionData({
-            abi: WEPPO_ABI,
-            functionName: 'preAuthorize',
-            args: [spenderAddress as `0x${string}`, amountInUnits],
+            gasUsed: receipt.gasUsed,
+            effectiveGasPrice: receipt.effectiveGasPrice
         });
 
-        // Sent from Alice's wallet so msg.sender == Alice
-        const hash = await sendViaCdp(callerAddress, config.weppoAddress, preAuthData, this.publicClient);
-        return { hash };
-    }
-
-    // -------------------------------------------------------------------------
-    // Charge Alice (Bob pulls from allowances[alice][bob])
-    // msg.sender = Bob's CDP wallet → contract checks allowances[alice][bob]
-    // -------------------------------------------------------------------------
-    async executeCharge(callerAgentId: string, fromId: string, amount: number, memo: string): Promise<{ hash: string; gasUsed: bigint; effectiveGasPrice: bigint }> {
-        if (!cdp) throw new Error('CDP Client not configured');
-
-        const callerAddress = await getWalletAddress(callerAgentId);  // Bob (the spender)
-        const fromAddress = await resolveAddress(fromId);               // Alice (the payer)
-
-        const decimals = await getUsdcDecimals(this.publicClient);
-        const amountInUnits = parseUnits(amount.toString(), decimals);
-
-        console.log(`[PaymentService] Charge: Bob (${callerAddress}) pulling ${amount} USDC from Alice (${fromAddress})`);
-        const chargeData = encodeFunctionData({
-            abi: WEPPO_ABI,
-            functionName: 'charge',
-            args: [fromAddress as `0x${string}`, amountInUnits, memo],
-        });
-
-        // Sent from Bob's wallet so msg.sender == Bob == the pre-authorized spender
-        if (!cdp) throw new Error('CDP Client not configured');
-        const tx = await cdp.evm.sendTransaction({
-            address: callerAddress,
-            transaction: { to: config.weppoAddress, data: chargeData, value: BigInt(0) },
-            network: 'base-sepolia',
-        });
-
-        const hash = tx.transactionHash as `0x${string}`;
-        const receipt = await this.publicClient.waitForTransactionReceipt({ hash, timeout: 60000 });
-        return { hash, gasUsed: receipt.gasUsed, effectiveGasPrice: receipt.effectiveGasPrice };
-    }
-
-    // -------------------------------------------------------------------------
-    // Meta-Tx Relay (for SDK-signed forward requests)
-    // -------------------------------------------------------------------------
-    async relayTransaction(request: any): Promise<{ hash: string; gasUsed: bigint; effectiveGasPrice: bigint }> {
-        if (!this.account) throw new Error('Private key not configured');
-
-        const ForwarderABI = [
-            {
-                name: 'execute',
-                type: 'function',
-                stateMutability: 'payable',
-                inputs: [
-                    {
-                        components: [
-                            { name: 'from', type: 'address' },
-                            { name: 'to', type: 'address' },
-                            { name: 'value', type: 'uint256' },
-                            { name: 'gas', type: 'uint256' },
-                            { name: 'deadline', type: 'uint48' },
-                            { name: 'data', type: 'bytes' },
-                            { name: 'signature', type: 'bytes' },
-                        ],
-                        name: 'request',
-                        type: 'tuple',
-                    },
-                ],
-                outputs: [{ name: 'success', type: 'bool' }],
-            },
-        ] as const;
-
-        const safeRequest = {
-            from: request.from,
-            to: request.to,
-            value: BigInt(request.value),
-            gas: BigInt(request.gas),
-            deadline: Number(request.deadline),
-            data: request.data,
-            signature: request.signature as `0x${string}`,
-        };
-
-        const hash = await this.walletClient.writeContract({
-            address: config.forwarderAddress,
-            abi: ForwarderABI,
-            functionName: 'execute',
-            args: [safeRequest],
-        });
-
-        const receipt = await this.publicClient.waitForTransactionReceipt({ hash });
         return { hash, gasUsed: receipt.gasUsed, effectiveGasPrice: receipt.effectiveGasPrice };
     }
 

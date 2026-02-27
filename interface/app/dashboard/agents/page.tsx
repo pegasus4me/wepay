@@ -38,7 +38,7 @@ export default function AgentsPage() {
     };
 
     return (
-        <div className="p-8 max-w-5xl mx-auto space-y-8 animate-in fade-in duration-700">
+        <div className="p-8 container mx-auto space-y-8 animate-in fade-in duration-700">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
@@ -52,6 +52,7 @@ export default function AgentsPage() {
                     <RiAddLine className="w-4 h-4" />
                     Connect Agent
                 </button>
+
             </div>
 
             {/* Content */}
@@ -79,13 +80,16 @@ export default function AgentsPage() {
                 </div>
             ) : (
                 /* Agents Grid */
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-1 gap-4">
                     {agents.map((agent) => (
                         <AgentCard key={agent.id} agent={agent} />
                     ))}
                 </div>
             )}
 
+            <div>
+                <h2 className="text-2xl font-light text-white tracking-tight">Monetized Endpoints</h2>
+            </div>
             {/* Connect Modal */}
             {showModal && (
                 <ConnectModal

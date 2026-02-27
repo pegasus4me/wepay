@@ -15,6 +15,7 @@ import { WeppoClient } from './client.js';
 export * from './types.js';
 export * from './errors.js';
 export * from './x402.js';
+export * from './express.js';
 
 /**
  * Weppo: The Consumer Abstraction Layer for Autonomous AI Agent Payments

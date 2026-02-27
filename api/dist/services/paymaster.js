@@ -3,31 +3,33 @@ import db from '../db.js';
 export class PaymasterService {
     /**
      * Tracks and records the sponsorship of a transaction.
-     * In a real system, this would also check against spend rules or quotas.
      */
     async trackSponsorship(paymentId, gasUsed, gasPrice) {
         const totalCostEth = formatEther(gasUsed * gasPrice);
         console.log(`[Paymaster] Sponsoring payment ${paymentId}. Cost: ${totalCostEth} ETH`);
-        db.prepare(`
-      UPDATE payments 
-      SET gas_used = ?, gas_price = ? 
-      WHERE id = ?
-    `).run(gasUsed.toString(), gasPrice.toString(), paymentId);
+        await db.from('payments')
+            .update({ gas_used: gasUsed.toString(), gas_price: gasPrice.toString() })
+            .eq('id', paymentId);
     }
     /**
      * Returns total sponsorship stats for an agent.
      */
-    getAgentStats(agentId) {
-        const stats = db.prepare(`
-      SELECT 
-        COUNT(*) as tx_count,
-        SUM(CAST(gas_used AS REAL) * CAST(gas_price AS REAL)) as total_gas_wei
-      FROM payments 
-      WHERE agent_id = ? AND gas_used IS NOT NULL
-    `).get(agentId);
+    async getAgentStats(agentId) {
+        const { data } = await db
+            .from('payments')
+            .select('gas_used, gas_price')
+            .eq('agent_id', agentId)
+            .not('gas_used', 'is', null);
+        const rows = data || [];
+        const totalGasWei = rows.reduce((sum, r) => {
+            if (r.gas_used && r.gas_price) {
+                return sum + BigInt(r.gas_used) * BigInt(r.gas_price);
+            }
+            return sum;
+        }, 0n);
         return {
-            transactionCount: stats?.tx_count || 0,
-            totalSponsorshipEth: stats?.total_gas_wei ? formatEther(BigInt(Math.floor(stats.total_gas_wei))) : '0',
+            transactionCount: rows.length,
+            totalSponsorshipEth: totalGasWei > 0n ? formatEther(totalGasWei) : '0',
         };
     }
 }

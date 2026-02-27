@@ -15,6 +15,10 @@ export declare class WeppoClient {
      */
     private signMetaTx;
     createPayment(params: PaymentRequest): Promise<PaymentResponse>;
+    deposit(amount: number): Promise<{
+        txHash: string;
+        status: string;
+    }>;
     preAuthorize(params: PreAuthRequest): Promise<{
         txHash: string;
         status: string;

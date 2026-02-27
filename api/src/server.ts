@@ -12,11 +12,18 @@ const authService = new AuthService();
 
 app.use(cors());
 app.use(express.json());
+import transactionsRoutes from './routes/transactions.js';
 
 // Auth middleware (async — validateKey queries Supabase)
 app.use(async (req, res, next) => {
-    // Skip auth for health check and auth routes
-    if (req.path === '/health' || req.path.startsWith('/auth')) {
+    // Skip auth for health check, auth routes, and viewing public balances/transactions/dashboard management
+    if (
+        req.path === '/health' ||
+        req.path.startsWith('/auth') ||
+        req.path.startsWith('/v1/market/services') || // Allow dashboard to manage monetized endpoints
+        (req.method === 'GET' && req.path.startsWith('/v1/wallets/') && req.path.endsWith('/balance')) ||
+        (req.method === 'GET' && req.path.startsWith('/v1/transactions'))
+    ) {
         return next();
     }
 
@@ -47,6 +54,7 @@ app.use('/v1/payments', paymentRoutes);
 app.use('/v1/wallets', walletRoutes);
 app.use('/v1/market', marketRoutes);
 app.use('/v1/payment-intents', paymentIntentRoutes);
+app.use('/v1/transactions', transactionsRoutes);
 
 app.listen(config.port, () => {
     console.log(`

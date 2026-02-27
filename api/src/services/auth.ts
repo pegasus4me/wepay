@@ -35,7 +35,7 @@ export class AuthService {
      * Creates a new API key for an agent and stores the hash.
      * Also auto-provisions an EVM account using the CDP Server Wallet v2.
      */
-    async createKeyForAgent(agentId: string, label?: string, userId?: string): Promise<string> {
+    async createKeyForAgent(agentId: string, label?: string, userId?: string, customKey?: string): Promise<string> {
         // Ensure agent exists
         const { data: agentRow, error: agentError } = await db
             .from('agents')
@@ -80,7 +80,7 @@ export class AuthService {
             if (updateError) throw new Error(`DB error claiming agent: ${updateError.message}`);
         }
 
-        const apiKey = this.generateApiKey();
+        const apiKey = customKey || this.generateApiKey();
         const keyHash = this.hashKey(apiKey);
 
         const { error: keyError } = await db
@@ -109,5 +109,32 @@ export class AuthService {
         }
 
         return data ? data.agent_id : null;
+    }
+
+    /**
+     * Lists all API keys for an agent.
+     */
+    async listKeysForAgent(agentId: string) {
+        const { data, error } = await db
+            .from('api_keys')
+            .select('key_hash, label, created_at')
+            .eq('agent_id', agentId);
+
+        if (error) throw new Error(`DB error listing keys: ${error.message}`);
+        return data;
+    }
+
+    /**
+     * Revokes (deletes) an API key.
+     */
+    async revokeKey(agentId: string, keyHash: string) {
+        const { error } = await db
+            .from('api_keys')
+            .delete()
+            .eq('agent_id', agentId)
+            .eq('key_hash', keyHash);
+
+        if (error) throw new Error(`DB error revoking key: ${error.message}`);
+        return true;
     }
 }

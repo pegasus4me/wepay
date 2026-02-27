@@ -2,6 +2,7 @@ import { WeppoConfig, PaymentRequest, PaymentResponse, BalanceResponse, Service,
 export * from './types.js';
 export * from './errors.js';
 export * from './x402.js';
+export * from './express.js';
 /**
  * Weppo: The Consumer Abstraction Layer for Autonomous AI Agent Payments
  */
@@ -12,6 +13,10 @@ export declare class Weppo {
      * Payments: Direct P2P transfers
      */
     pay(params: PaymentRequest): Promise<PaymentResponse>;
+    deposit(amount: number): Promise<{
+        txHash: string;
+        status: string;
+    }>;
     preAuthorize(spender: string, maxAmount: number): Promise<{
         txHash: string;
         status: string;

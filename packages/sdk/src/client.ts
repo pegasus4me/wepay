@@ -1,6 +1,9 @@
 import { createPublicClient, createWalletClient, http, encodeFunctionData, Hex, PrivateKeyAccount, Hash } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { baseSepolia } from 'viem/chains';
+import { wrapFetchWithPayment } from '@x402/fetch';
+
+import { EvmMechanism } from '@x402/evm';
 import { WeppoConfig, PaymentRequest, PaymentResponse, BalanceResponse, Service, CreateServiceRequest, PaymentIntent, CreatePaymentIntentRequest, PreAuthRequest, ChargeRequest, ForwardRequest } from './types.js';
 import { WeppoError, AuthenticationError, InsufficientFundsError, PaymentFailedError } from './errors.js';
 
@@ -20,7 +23,7 @@ const WEPPO_ABI = [
         name: 'preAuthorize',
         type: 'function',
         stateMutability: 'nonpayable',
-        inputs: [{ name: 'spender', type: 'address' }, { name: 'maxAmount', type: 'uint256' }],
+        inputs: [{ name: 'spender', type: 'address' }, { name: 'amount', type: 'uint256' }],
         outputs: [],
     },
     {
@@ -43,6 +46,9 @@ export class WeppoClient {
     private forwarderAddress?: Hex;
     private weppoAddress?: Hex;
 
+    // Official x402 Fetch Instance
+    private authenticatedFetch: any;
+
     constructor(config: WeppoConfig) {
         this.apiKey = config.apiKey;
         this.agentId = config.agentId;
@@ -55,8 +61,22 @@ export class WeppoClient {
 
             this.publicClient = createPublicClient({
                 chain: baseSepolia,
-                transport: http(config.baseUrl ? undefined : 'https://sepolia.base.org'), // Default or provided
+                transport: http(config.baseUrl ? undefined : 'https://sepolia.base.org'),
             });
+
+            // Initialize official x402 fetch with EVM mechanism
+            this.authenticatedFetch = x402Fetch({
+                mechanisms: [
+                    new EvmMechanism({
+                        signer: this.account as any,
+                        // Specify USDC contract for EIP-3009 checks
+                        token: '0x036CbD53842c5426634e7929541eC2318f3dCF7e', 
+                    })
+                ]
+            });
+        } else {
+            // Fallback fetch for custodial-only mode
+            this.authenticatedFetch = fetch;
         }
     }
 
@@ -71,71 +91,53 @@ export class WeppoClient {
 
         try {
             const response = await fetch(url, { ...options, headers });
-            const data = await response.json();
+            const contentType = response.headers.get('content-type');
 
-            if (!response.ok) {
-                this.handleError(response.status, data);
+            if (contentType && contentType.includes('application/json')) {
+                const data = await response.json();
+                if (!response.ok) {
+                    this.handleError(response.status, data);
+                }
+                return data as T;
+            } else {
+                const text = await response.text();
+                if (!response.ok) {
+                    throw new WeppoError(`API Error (${response.status}): ${text}`, 'API_ERROR', response.status);
+                }
+                try { return JSON.parse(text) as T; } catch { return { message: text } as unknown as T; }
             }
-
-            return data as T;
         } catch (error) {
             if (error instanceof WeppoError) throw error;
-            throw new WeppoError(
-                error instanceof Error ? error.message : 'Unknown communication error',
-                'COMMUNICATION_ERROR',
-                500
-            );
+            throw new WeppoError(error instanceof Error ? error.message : 'Unknown communication error', 'COMMUNICATION_ERROR', 500);
         }
     }
 
     private handleError(status: number, data: any) {
         const message = data.error || data.message || 'An unexpected error occurred';
         const code = data.code;
-
         if (status === 401) throw new AuthenticationError(message);
         if (code === 'INSUFFICIENT_FUNDS') throw new InsufficientFundsError(message);
         if (code === 'PAYMENT_FAILED') throw new PaymentFailedError(message, data.hash);
-
         throw new WeppoError(message, code, status);
     }
 
-    /**
-     * Signs a meta-transaction for ERC-2771 Forwarder (OpenZeppelin v5).
-     */
     private async signMetaTx(to: Hex, data: Hex): Promise<ForwardRequest> {
         if (!this.account || !this.forwarderAddress) {
             throw new Error('Private Key and Forwarder Address required for signing');
         }
-
         const from = this.account.address;
-
-        // 1. Get Nonce
         const nonce = await this.publicClient.readContract({
             address: this.forwarderAddress,
             abi: FORWARDER_ABI,
             functionName: 'nonces',
             args: [from],
         });
-
-        // 2. Set Deadline (e.g. 1 hour from now)
         const deadline = Math.floor(Date.now() / 1000) + 3600;
-
-        // 3. Create Request
-        const request = {
-            from,
-            to,
-            value: 0n,
-            gas: 500000n, // Hardcoded gas limit for now
-            nonce,
-            deadline,
-            data,
-        };
-
-        // 4. Sign EIP-712
+        const request = { from, to, value: 0n, gas: 500000n, nonce, deadline, data };
         const signature = await this.account.signTypedData({
             domain: {
-                name: 'WeppoForwarder', // Must match the name in contract constructor
-                version: '1', // ERC2771Forwarder default version is "1"
+                name: 'WeppoForwarder',
+                version: '1',
                 chainId: baseSepolia.id,
                 verifyingContract: this.forwarderAddress,
             },
@@ -151,17 +153,12 @@ export class WeppoClient {
                 ],
             },
             primaryType: 'ForwardRequest',
-            message: {
-                ...request,
-                deadline: BigInt(deadline) as any // Cast to any to bypass TS check for now
-            },
+            message: { ...request, deadline: BigInt(deadline) as any },
         });
-
-        // Return object compatible with ForwardRequestData struct (signature embedded)
         return {
             from: request.from,
             to: request.to,
-            value: request.value.toString() as any, // Convert to string for JSON
+            value: request.value.toString() as any,
             gas: request.gas.toString() as any,
             nonce: request.nonce.toString() as any,
             deadline: request.deadline,
@@ -186,31 +183,19 @@ export class WeppoClient {
 
     async preAuthorize(params: PreAuthRequest): Promise<{ txHash: string, status: string }> {
         if (this.account) {
-            // Meta-Tx Flow
             if (!this.weppoAddress) throw new Error('Weppo Address required');
-
-            // 1. Encode Data
-            // Note: maxAmount needs access to decimals. ideally we read from chain or api.
-            // For now assuming 6 decimals (USDC)
             const amountInUnits = BigInt(params.maxAmount * 1e6);
-
             const data = encodeFunctionData({
                 abi: WEPPO_ABI,
                 functionName: 'preAuthorize',
                 args: [params.spender as Hex, amountInUnits],
             });
-
-            // 2. Sign
             const requestWithSignature = await this.signMetaTx(this.weppoAddress, data);
-
-            // 3. Send to Relayer
             return this.request<{ txHash: string, status: string }>('/payments/pre-authorize-meta', {
                 method: 'POST',
                 body: JSON.stringify({ request: requestWithSignature }),
             });
         }
-
-        // Old Flow (Custodial) - Deprecated but kept for compatibility
         return this.request<{ txHash: string, status: string }>('/payments/pre-authorize', {
             method: 'POST',
             body: JSON.stringify(params),
@@ -219,25 +204,19 @@ export class WeppoClient {
 
     async charge(params: ChargeRequest): Promise<PaymentResponse> {
         if (this.account) {
-            // Meta-Tx Flow
             if (!this.weppoAddress) throw new Error('Weppo Address required');
-
             const amountInUnits = BigInt(params.amount * 1e6);
-
             const data = encodeFunctionData({
                 abi: WEPPO_ABI,
                 functionName: 'charge',
                 args: [params.from as Hex, amountInUnits, params.memo || ''],
             });
-
             const requestWithSignature = await this.signMetaTx(this.weppoAddress, data);
-
             return this.request<PaymentResponse>('/payments/charge-meta', {
                 method: 'POST',
                 body: JSON.stringify({ request: requestWithSignature }),
             });
         }
-
         return this.request<PaymentResponse>('/payments/charge', {
             method: 'POST',
             body: JSON.stringify(params),
@@ -252,8 +231,6 @@ export class WeppoClient {
         return this.request<PaymentResponse>(`/payments/${id}`);
     }
 
-    // --- Market (Service Registry) ---
-
     async createService(params: CreateServiceRequest): Promise<Service> {
         return this.request<Service>('/market/services', {
             method: 'POST',
@@ -265,8 +242,6 @@ export class WeppoClient {
         return this.request<Service[]>('/market/services');
     }
 
-    // --- Payment Intents ---
-
     async createPaymentIntent(params: CreatePaymentIntentRequest): Promise<PaymentIntent> {
         return this.request<PaymentIntent>('/payment-intents', {
             method: 'POST',
@@ -277,4 +252,11 @@ export class WeppoClient {
     async getPaymentIntent(id: string): Promise<PaymentIntent> {
         return this.request<PaymentIntent>(`/payment-intents/${id}`);
     }
+
+    /**
+     * Standardized x402 Fetch.
+     * Uses official @x402/fetch to handle 402 challenges via EVM signing (EIP-3009)
+     * or fallbacks to the Weppo Pull model if no private key is available.
+     */
+
 }

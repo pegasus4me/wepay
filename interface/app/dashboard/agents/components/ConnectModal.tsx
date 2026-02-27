@@ -11,7 +11,7 @@ import {
 } from "@remixicon/react";
 import { Agent, Framework, ModalStep, Credentials } from "../types";
 import { FRAMEWORKS } from "../constants";
-import { downloadSkillMd, downloadToolTs } from "../utils";
+import { downloadSkillMd, downloadToolTs, downloadPackageJson } from "../utils";
 import { CopyButton } from "./CopyButton";
 
 export function ConnectModal({
@@ -191,19 +191,28 @@ export function ConnectModal({
                         {/* OpenClaw SDK download */}
                         {selectedFramework?.id === "openclaw" && (
                             <div className="flex flex-col gap-2">
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={() => downloadSkillMd(credentials.agentId, credentials.apiKey, credentials.walletAddress)}
+                                        className="flex-1 flex items-center justify-center gap-2 text-xs text-white bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 py-2 rounded-xl transition-colors"
+                                    >
+                                        <RiDownloadLine className="w-4 h-4" />
+                                        SKILL.md
+                                    </button>
+                                    <button
+                                        onClick={() => downloadToolTs(credentials.agentId, credentials.apiKey)}
+                                        className="flex-1 flex items-center justify-center gap-2 text-xs text-neutral-400 hover:text-white bg-neutral-900 border border-neutral-800 py-2 rounded-xl transition-colors"
+                                    >
+                                        <RiDownloadLine className="w-4 h-4" />
+                                        tools.ts
+                                    </button>
+                                </div>
                                 <button
-                                    onClick={() => downloadSkillMd(credentials.agentId, credentials.apiKey, credentials.walletAddress)}
-                                    className="w-full flex items-center justify-center gap-2 text-sm text-white bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 py-2.5 rounded-xl transition-colors"
+                                    onClick={() => downloadPackageJson()}
+                                    className="w-full flex items-center justify-center gap-2 text-xs text-neutral-400 hover:text-white bg-neutral-900 border border-neutral-800 py-2 rounded-xl transition-colors"
                                 >
                                     <RiDownloadLine className="w-4 h-4" />
-                                    Download weppo-skill.md
-                                </button>
-                                <button
-                                    onClick={() => downloadToolTs(credentials.agentId, credentials.apiKey)}
-                                    className="w-full flex items-center justify-center gap-2 text-sm text-neutral-400 hover:text-white bg-neutral-900 border border-neutral-800 py-2.5 rounded-xl transition-colors"
-                                >
-                                    <RiDownloadLine className="w-4 h-4" />
-                                    Download weppo-tool.ts
+                                    package.json
                                 </button>
                             </div>
                         )}

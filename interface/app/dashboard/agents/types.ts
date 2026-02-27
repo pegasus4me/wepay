@@ -20,3 +20,8 @@ export type Credentials = {
     walletAddress: string;
     agentId: string;
 };
+export type ApiKeyInfo = {
+    key_hash: string;
+    label: string | null;
+    created_at: string;
+};

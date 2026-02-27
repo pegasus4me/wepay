@@ -5,9 +5,9 @@ const router = Router();
 const marketService = new MarketService();
 
 // List all services (Discovery)
-router.get('/services', (req, res) => {
+router.get('/services', async (req, res) => {
     try {
-        const services = marketService.listServices();
+        const services = await marketService.listServices();
         res.json(services);
     } catch (error) {
         res.status(500).json({ message: 'Failed to list services', error: error instanceof Error ? error.message : String(error) });
